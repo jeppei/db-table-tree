@@ -67,7 +67,7 @@ def add_to_tree(tree, parent_path, index, child_path, node_text, direction, tag)
 
 
 def get_table_data(table_name, property_value):
-    if property_value == "":
+    if property_value == "" or property_value == "None":
         query = f"""
             select *
             from {table_name}
@@ -268,5 +268,9 @@ tree.tag_configure('foreign_key', foreground='black', background='#cccccc')
 tree.tag_configure('primary_key', foreground='black', background='#f5c84c')
 tree.bind("<Double-1>", toggle_node)
 tree.bind("<<TreeviewOpen>>", toggle_node)
+style_name = "Custom.Treeview"
+ttk.Style().configure(style=style_name, indent=100)
+tree.config(style=style_name)
+
 tree.insert("", 0, f"{table}(id={row_id})", text=table, tags=("foreign_key", ))
 root.mainloop()
