@@ -8,11 +8,34 @@ from tkinter import ttk
 
 
 log_debug = False
+nodes = {}
 
 
-def debug(*args):
+class NodeType:
+    def __init__(self, name, direction):
+        self.name = name
+        self.direction = direction
+
+
+class NodeTypes:
+    TO_OTHER = NodeType('To other', '-->')
+    FROM_OTHER = NodeType('From other', '<--')
+    VALUE = NodeType('Value', '---')
+    DUMMY = NodeType('Dummy', '###')
+
+
+class Node:
+    def __init__(self, full_path, parent_path, node_type, node_key=None, node_value=None):
+        self.full_path = full_path
+        self.parent_path = parent_path
+        self.node_type = node_type
+        self.node_key = node_key
+        self.node_value = node_value
+
+
+def debug(*print_args):
     if log_debug:
-        print(*args)
+        print(*print_args)
 
 
 def get_my_db(env):
@@ -40,7 +63,7 @@ def get_my_db(env):
         password = os.environ['DATABASE_PROD_PASSWORD']
 
     else:
-        print("Invalid environment.")
+        debug("Invalid environment.")
         sys.exit()
 
     return mysql.connector.connect(
@@ -52,16 +75,17 @@ def get_my_db(env):
     )
 
 
-def add_to_tree(tree, parent_path, index, child_path, node_text, direction, tag):
-    print(f'{index}: Adding {direction}: {child_path}')
+def add_to_tree(parent_path, index, child_path, node_text, node_type):
+    debug(f'{node_type.direction}: Adding {node_type.name}: {child_path}')
     if tree.exists(child_path):
         return False
+    nodes[child_path] = Node(child_path, parent_path, node_type)
     tree.insert(
         parent_path,
         index,
         child_path,
         text=node_text,
-        tags=(tag,)
+        tags=(node_type.name,)
     )
     return True
 
@@ -81,7 +105,7 @@ def get_table_data(table_name, property_value):
             limit 1
         """
 
-    print(query)
+    debug(query)
     my_cursor.execute(query)
     table_data = my_cursor.fetchall()
     number_of_columns = len(my_cursor.description)
@@ -89,7 +113,7 @@ def get_table_data(table_name, property_value):
 
     column_values = [""] * number_of_columns
 
-    print(f'len(table_data)={len(table_data)}')
+    debug(f'len(table_data)={len(table_data)}')
     if len(table_data) == 1:
         column_values = table_data[0]
 
@@ -102,10 +126,9 @@ def get_table_relations_to_others(table_name):
         FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
         WHERE TABLE_SCHEMA = SCHEMA()
         AND REFERENCED_TABLE_NAME IS NOT NULL
-        AND TABLE_NAME = '{table_name}'
-        ORDER BY REFERENCED_TABLE_NAME ASC;
+        AND TABLE_NAME = '{table_name}';
     """
-    print(query)
+    debug(query)
     my_cursor.execute(query)
     data = my_cursor.fetchall()
 
@@ -115,13 +138,14 @@ def get_table_relations_to_others(table_name):
 
     return relations
 
+
 def get_list_of_other_tables_relating_to_this(other_table_name, other_table_column_key, other_table_column_value):
     query = f"""
         SELECT *
         FROM {other_table_name}
         WHERE {other_table_column_key}={other_table_column_value}
     """
-    print(query)
+    debug(query)
     my_cursor.execute(query)
     data = my_cursor.fetchall()
 
@@ -132,8 +156,7 @@ def get_table_relations_from_others(table_name):
         FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
         WHERE TABLE_SCHEMA = SCHEMA()
         AND REFERENCED_TABLE_NAME IS NOT NULL
-        AND REFERENCED_TABLE_NAME= '{table_name}'
-        ORDER BY REFERENCED_TABLE_NAME ASC;
+        AND REFERENCED_TABLE_NAME= '{table_name}';
     """
     my_cursor.execute(to_this_query)
     data = my_cursor.fetchall()
@@ -147,11 +170,15 @@ def get_table_relations_from_others(table_name):
 
 def toggle_node(event):
     parent_path = tree.selection()[0]  # table1/table2/(key=value) or table1/table2(key=value)
-    print(parent_path)
+    parent_node = nodes[parent_path]
+    debug(parent_path)
     tables = parent_path.split("/")  # [table1, table2, (key=value)] or [table1, table2(key=value)]
     table_and_id = tables[-1]  # (key=value) or table2(key=value)
-    if table_and_id[0] == "(":  # (key=value)
+    if parent_node.node_type == NodeTypes.VALUE:  # (key=value)
         return
+    if parent_node.node_type == NodeTypes.DUMMY:  # (key=value)
+        return
+
     parent_table_name = table_and_id.split("(")[0]  # table2
     column = table_and_id.split("(")[1][0:-1]  # key=value
     parent_column_key = column.split("=")[0]  # key
@@ -163,34 +190,30 @@ def toggle_node(event):
     column_keys, column_values = get_table_data(parent_table_name, parent_column_value)
     relations_to_others = get_table_relations_to_others(parent_table_name)
     relations_from_others = get_table_relations_from_others(parent_table_name)
-    print(f"relations_to_others: {relations_to_others}")
+    debug(f"relations_to_others: {relations_to_others}")
 
-    print(f'table_name: {parent_table_name}')
-    print(f'column_keys: {column_keys}')
-    print(f'column_values: {column_values}')
-    print(f'relations_to_others: {relations_to_others}')
+    debug(f'table_name: {parent_table_name}')
+    debug(f'column_keys: {column_keys}')
+    debug(f'column_values: {column_values}')
+    debug(f'relations_to_others: {relations_to_others}')
 
     for child_table_name in relations_from_others.keys():
         child_column_key = relations_from_others[child_table_name]
-        print(f'{child_table_name}: {child_column_key}')
+        debug(f'{child_table_name}: {child_column_key}')
         child_path = f'{parent_path}/{child_table_name}({child_column_key}=)'
         add_to_tree(
-            tree,
             parent_path,
             1,
             child_path,
             f'id <-- [{child_table_name}.{child_column_key}]',
-            "<--",
-            "primary_key"
+            NodeTypes.FROM_OTHER
         )
         add_to_tree(
-            tree,
             child_path,
             1,
             f'{child_path}/(double-click)',
             f'(double click parent to fetch)',
-            "---",
-            "dummy"
+            NodeTypes.DUMMY
         )
 
     for i in range(len(column_keys)):
@@ -205,22 +228,18 @@ def toggle_node(event):
             if child_column_value == "":
                 node_text = f'{child_column_key}'
             add_to_tree(
-                tree,
                 parent_path,
                 1,
                 child_path,
                 node_text,
-                "-->",
-                "foreign_key"
+                NodeTypes.TO_OTHER
             )
             add_to_tree(
-                tree,
                 child_path,
                 1,
                 f'{child_path}/(double-click)',
                 f'(double click parent to fetch)',
-                "-->",
-                "dummy"
+                NodeTypes.DUMMY
             )
 
         else:
@@ -228,13 +247,11 @@ def toggle_node(event):
             if child_column_value == "":
                 node_text = f'{child_column_key}'
             add_to_tree(
-                tree,
                 parent_path,
                 1,
                 f'{parent_path}/({child_column_key}={child_column_value})',
                 node_text,
-                "---",
-                "value_key"
+                NodeTypes.VALUE
             )
 
 
@@ -263,14 +280,15 @@ root.grid_columnconfigure(0, weight=1)
 tree = ttk.Treeview(root)
 tree.grid(row=0, column=0, sticky="nsew")  # Use grid layout and sticky option
 tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
-tree.tag_configure('value_key', foreground='black', background='white')
-tree.tag_configure('foreign_key', foreground='black', background='#cccccc')
-tree.tag_configure('primary_key', foreground='black', background='#f5c84c')
-tree.bind("<Double-1>", toggle_node)
+tree.tag_configure(NodeTypes.VALUE.name, foreground='black', background='white')
+tree.tag_configure(NodeTypes.TO_OTHER.name, foreground='black', background='#cccccc')
+tree.tag_configure(NodeTypes.FROM_OTHER.name, foreground='black', background='#f5c84c')
 tree.bind("<<TreeviewOpen>>", toggle_node)
 style_name = "Custom.Treeview"
 ttk.Style().configure(style=style_name, indent=100)
 tree.config(style=style_name)
 
-tree.insert("", 0, f"{table}(id={row_id})", text=table, tags=("foreign_key", ))
+root_node = f"{table}(id={row_id})"
+add_to_tree("", 0, root_node, table, NodeTypes.TO_OTHER)
+add_to_tree(root_node, 1, f'{root_node}/(double-click)', '', NodeTypes.DUMMY)
 root.mainloop()
