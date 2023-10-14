@@ -97,9 +97,9 @@ def get_my_db(env):
 
 
 def add_to_tree(node, node_text):
-    debug(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
     if tree.exists(node.full_path):
         return False
+    debug(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
     nodes[node.full_path] = node
     tree.insert(
         node.parent_path,
@@ -134,7 +134,6 @@ def get_children(table_name, property_value):
 
     column_values = [""] * number_of_columns
 
-    debug(f'len(table_data)={len(table_data)}')
     if len(table_data) == 1:
         column_values = table_data[0]
 
@@ -143,11 +142,11 @@ def get_children(table_name, property_value):
 
 def get_children_with_children(table_name):
     query = f"""
-        SELECT REFERENCED_TABLE_NAME, COLUMN_NAME
-        FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
-        WHERE TABLE_SCHEMA = SCHEMA()
-        AND REFERENCED_TABLE_NAME IS NOT NULL
-        AND TABLE_NAME = '{table_name}';
+            SELECT REFERENCED_TABLE_NAME, COLUMN_NAME
+            FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
+            WHERE TABLE_SCHEMA = SCHEMA()
+            AND REFERENCED_TABLE_NAME IS NOT NULL
+            AND TABLE_NAME = '{table_name}';
     """
     debug(query)
     my_cursor.execute(query)
@@ -193,14 +192,15 @@ def get_parent_rows(other_table_name, other_table_column_key, other_table_column
 
 
 def get_parent_table_names_and_column_relation(table_name):
-    to_this_query = f"""
-        SELECT TABLE_NAME, COLUMN_NAME
-        FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
-        WHERE TABLE_SCHEMA = SCHEMA()
-        AND REFERENCED_TABLE_NAME IS NOT NULL
-        AND REFERENCED_TABLE_NAME= '{table_name}';
+    query = f"""
+            SELECT TABLE_NAME, COLUMN_NAME
+            FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
+            WHERE TABLE_SCHEMA = SCHEMA()
+            AND REFERENCED_TABLE_NAME IS NOT NULL
+            AND REFERENCED_TABLE_NAME= '{table_name}';
     """
-    my_cursor.execute(to_this_query)
+    debug(query)
+    my_cursor.execute(query)
     data = my_cursor.fetchall()
 
     relations = {}
@@ -213,9 +213,11 @@ def get_parent_table_names_and_column_relation(table_name):
 
 
 def toggle_node(event):
-    parent_path = tree.selection()[0]  # table1/table2/(key=value) or table1/table2(key=value)
+    parent_path = tree.selection()[0]
+    message = f'# Expanding on {parent_path} #'
+    line = '#' * len(message)
+    debug(f'\n{line}\n{message}\n{line}\n')
     parent_node = nodes[parent_path]
-    debug(parent_path)
     if parent_node.node_type == NodeTypes.LEAF:
         return
     if parent_node.node_type == NodeTypes.DUMMY:
@@ -232,6 +234,8 @@ def toggle_node(event):
             parent_node.column_to_other_parent,
             parent_node.other_parent_id
         )
+        child_children = get_children_with_children(parent_node.table_name)
+        child_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
         parent_list_number = 1
         for new_parent in new_parents:
             parent_list_node = Node(
@@ -243,9 +247,7 @@ def toggle_node(event):
             )
             add_to_tree(parent_list_node, f'{parent_list_number}: {parent_node.table_name}')
 
-            child_children = get_children_with_children(parent_node.table_name)
-            child_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
-            add_childrens_to_tree(
+            add_children_to_tree(
                 child_parents,
                 parent_list_node,
                 new_parent_columns,
@@ -261,14 +263,14 @@ def toggle_node(event):
         child_children = get_children_with_children(parent_node.table_name)
         child_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
 
-        debug("")
-        debug(f'table_name: {parent_node.table_name}')
-        debug(f"relations_to_others: {child_children}")
-        debug(f'relations_from_others: {child_parents}')
-        debug(f'column_keys: {column_keys}')
-        debug(f'column_values: {column_values}')
+        # debug("")
+        # debug(f'table_name: {parent_node.table_name}')
+        # debug(f"relations_to_others: {child_children}")
+        # debug(f'relations_from_others: {child_parents}')
+        # debug(f'column_keys: {column_keys}')
+        # debug(f'column_values: {column_values}')
 
-        add_childrens_to_tree(
+        add_children_to_tree(
             child_parents,
             parent_node,
             column_keys,
@@ -278,13 +280,13 @@ def toggle_node(event):
         )
 
 
-def add_childrens_to_tree(
-        relations_from_others,
-        parent_node,
-        column_keys,
-        column_values,
-        relations_to_others,
-        explored_column
+def add_children_to_tree(
+    relations_from_others,
+    parent_node,
+    column_keys,
+    column_values,
+    relations_to_others,
+    explored_column
 ):
     for child_table_name in relations_from_others.keys():
         child_column_key = relations_from_others[child_table_name]
@@ -293,7 +295,6 @@ def add_childrens_to_tree(
         if child_column_key == explored_column:
             child_node_type = NodeTypes.PARENT_VISITED
 
-        debug(f'{child_table_name}: {child_column_key}')
         child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
         child_node = Node(
             child_path,
