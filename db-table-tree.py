@@ -395,3 +395,5 @@ add_to_tree(root_node, table)
 dumb_node = Node(f'{root_node_path}/(double-click)', root_node_path, NodeTypes.DUMMY, -1, "dummy")
 add_to_tree(dumb_node, '')
 root.mainloop()
+
+test
