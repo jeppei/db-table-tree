@@ -5,6 +5,7 @@ import argparse
 import os
 import tkinter as tk
 from tkinter import ttk
+import json
 
 
 log_debug = True
@@ -19,39 +20,45 @@ class NodeType:
 
 class NodeTypes:
     CHILDREN_WITH_CHILDREN = (
-        NodeType('Child with childs          ', '>>'))
+        NodeType('Child with children              ', '>>'))
+    CHILDREN_WITH_CHILDREN_WITHOUT_VALUE = (
+        NodeType('Child with children without value', '>>'))
     CHILDREN_WITH_CHILDREN_VISITED = (
-        NodeType('Child with childs (visited)', '->'))
+        NodeType('Child with children (visited)    ', '->'))
     PARENT = (
-        NodeType('Parent                     ', '<<'))
+        NodeType('Parent                           ', '<<'))
     PARENT_VISITED = (
-        NodeType('Parent (visited)           ', '<-'))
+        NodeType('Parent (visited)                 ', '<-'))
     PARENT_LIST_NODE = (
-        NodeType('Parent list node           ', '<>'))
+        NodeType('Parent list node                 ', '<>'))
     LEAF = (
-        NodeType('Leaf                       ', '--'))
+        NodeType('Leaf                             ', '--'))
+    LEAF_WITHOUT_VALUE = (
+        NodeType('Leaf without value               ', '--'))
     DUMMY = (
-        NodeType('Dummy                      ', '..'))
+        NodeType('Dummy                            ', '..'))
 
 
 class Node:
     def __init__(
         self,
         full_path,
-        parent_path,
+        parent_node,
         node_type,
         node_id,
         table_name,
-        column_to_other_parent=None,
-        other_parent_id=-1
+        parent_column_name=None,
+        parent_column_name_value=-1
     ):
         self.full_path = full_path
-        self.parent_path = parent_path
+        self.parent_node = parent_node
         self.node_type = node_type
         self.node_id = node_id
         self.table_name = table_name
-        self.column_to_other_parent = column_to_other_parent
-        self.other_parent_id = other_parent_id
+
+        # For parents
+        self.parent_column_name = parent_column_name
+        self.parent_column_name_value = parent_column_name_value
 
 
 def debug(*print_args):
@@ -102,7 +109,7 @@ def add_to_tree(node, node_text):
     debug(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
     nodes[node.full_path] = node
     tree.insert(
-        node.parent_path,
+        node.parent_node.full_path,
         10000,
         node.full_path,
         text=node_text,
@@ -128,16 +135,22 @@ def get_children(table_name, property_value):
 
     debug(query)
     my_cursor.execute(query)
-    table_data = my_cursor.fetchall()
-    number_of_columns = len(my_cursor.description)
-    column_keys = [i[0] for i in my_cursor.description]
+    resulting_rows = my_cursor.fetchall()
 
-    column_values = [""] * number_of_columns
+    columns = [i[0] for i in my_cursor.description]
 
-    if len(table_data) == 1:
-        column_values = table_data[0]
+    rows = []
+    if len(resulting_rows) == 0:
+        rows.append({})
+        for c in range(len(columns)):
+            rows[0][columns[c]] = ""
+    else:
+        for r in range(len(resulting_rows)):
+            rows.append({})
+            for c in range(len(columns)):
+                rows[r][columns[c]] = resulting_rows[r][c]
 
-    return column_keys, column_values
+    return columns, rows
 
 
 def get_children_with_children(table_name):
@@ -159,7 +172,22 @@ def get_children_with_children(table_name):
     return relations
 
 
-def get_parent_rows(other_table_name, other_table_column_key, other_table_column_value):
+def get_primary_key_of_table(table_name):
+    query = f"""
+        SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'
+    """
+    debug(query)
+    my_cursor.execute(query)
+    resulting_rows = my_cursor.fetchall()
+
+    primary_keys = []
+    for row in resulting_rows:
+        primary_keys.append(row[4])
+
+    return primary_keys
+
+
+def get_parents(other_table_name, other_table_column_key, other_table_column_value):
 
     if (
         other_table_column_value == "" or
@@ -180,13 +208,20 @@ def get_parent_rows(other_table_name, other_table_column_key, other_table_column
         """
     debug(query)
     my_cursor.execute(query)
-    rows = my_cursor.fetchall()
+    resulting_rows = my_cursor.fetchall()
 
-    number_of_columns = len(my_cursor.description)
     columns = [i[0] for i in my_cursor.description]
 
-    if len(rows) == 0:
-        rows = [[""] * number_of_columns]
+    rows = []
+    if len(resulting_rows) == 0:
+        rows.append({})
+        for c in range(len(columns)):
+            rows[0][columns[c]] = ""
+    else:
+        for r in range(len(resulting_rows)):
+            rows.append({})
+            for c in range(len(columns)):
+                rows[r][columns[c]] = resulting_rows[r][c]
 
     return columns, rows
 
@@ -214,6 +249,10 @@ def get_parent_table_names_and_column_relation(table_name):
 
 def toggle_node(event):
     parent_path = tree.selection()[0]
+    fetch_children(parent_path)
+
+
+def fetch_children(parent_path):
     message = f'# Expanding on {parent_path} #'
     line = '#' * len(message)
     debug(f'\n{line}\n{message}\n{line}\n')
@@ -229,39 +268,54 @@ def toggle_node(event):
         tree.delete(f'{parent_path}/(double-click)')
 
     if parent_node.node_type == NodeTypes.PARENT:
-        new_parent_columns, new_parents = get_parent_rows(
+        primary_keys = get_primary_key_of_table(parent_node.table_name)
+        new_parent_columns, new_parents = get_parents(
             parent_node.table_name,
-            parent_node.column_to_other_parent,
-            parent_node.other_parent_id
+            parent_node.parent_column_name,
+            parent_node.parent_column_name_value
         )
-        child_children = get_children_with_children(parent_node.table_name)
-        child_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
+        new_parent_children_with_children = get_children_with_children(parent_node.table_name)
+        new_parent_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
         parent_list_number = 1
         for new_parent in new_parents:
+
+            id_string = ""
+            node_type = NodeTypes.PARENT_LIST_NODE
+            if len(primary_keys) == 1:
+                list_node_expanded_as_parent = new_parent[primary_keys[0]] == parent_node.parent_node.parent_node.node_id
+                if new_parent[primary_keys[0]] != "":
+                    id_string = f'({primary_keys[0]}={new_parent[primary_keys[0]]})'
+                if list_node_expanded_as_parent:
+                    node_type = NodeTypes.PARENT_VISITED
+
             parent_list_node = Node(
                 f'{parent_path}/{parent_list_number}',
-                parent_path,
-                NodeTypes.PARENT_LIST_NODE,
+                parent_node,
+                node_type,
                 None,
                 None,
             )
-            add_to_tree(parent_list_node, f'{parent_list_number}: {parent_node.table_name}')
+
+            add_to_tree(parent_list_node, f'{parent_list_number}: {parent_node.table_name} {id_string}')
+
+            if node_type == NodeTypes.PARENT_VISITED:
+                continue
 
             add_children_to_tree(
-                child_parents,
+                new_parent_parents,
                 parent_list_node,
                 new_parent_columns,
                 new_parent,
-                child_children,
-                parent_node.column_to_other_parent
+                new_parent_children_with_children,
+                parent_node.parent_column_name
             )
 
             parent_list_number = parent_list_number + 1
 
     if parent_node.node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
         column_keys, column_values = get_children(parent_node.table_name, parent_node.node_id)
-        child_children = get_children_with_children(parent_node.table_name)
-        child_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
+        new_parent_children_with_children = get_children_with_children(parent_node.table_name)
+        new_parent_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
 
         # debug("")
         # debug(f'table_name: {parent_node.table_name}')
@@ -271,12 +325,12 @@ def toggle_node(event):
         # debug(f'column_values: {column_values}')
 
         add_children_to_tree(
-            child_parents,
+            new_parent_parents,
             parent_node,
             column_keys,
-            column_values,
-            child_children,
-            parent_node.column_to_other_parent
+            column_values[0],
+            new_parent_children_with_children,
+            parent_node.parent_column_name
         )
 
 
@@ -284,7 +338,7 @@ def add_children_to_tree(
     relations_from_others,
     parent_node,
     column_keys,
-    column_values,
+    row,
     relations_to_others,
     explored_column
 ):
@@ -298,38 +352,39 @@ def add_children_to_tree(
         child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
         child_node = Node(
             child_path,
-            parent_node.full_path,
+            parent_node,
             child_node_type,
-            child_column_key,
+            parent_node.node_id,
             child_table_name,
             child_column_key,
             parent_node.node_id,
         )
-        add_to_tree(child_node, f'id <-- [{child_table_name}.{child_column_key}]')
+        add_to_tree(child_node, f'[{child_table_name}.{child_column_key}]')
 
         if child_node_type == NodeTypes.PARENT:
-            dummy_node = Node(f'{child_path}/(double-click)', child_path, NodeTypes.DUMMY, -1, "dummy",)
+            dummy_node = Node(f'{child_path}/(double-click)', child_node, NodeTypes.DUMMY, -1, "dummy",)
             add_to_tree(dummy_node, f'(double click parent to fetch)')
 
-    for i in range(len(column_keys)):
+    for child_column_key in column_keys:
 
-        child_column_key = column_keys[i]
-        child_column_value = column_values[i]
+        child_column_value = row[child_column_key]
 
         if child_column_key in relations_to_others:
             child_table_name = relations_to_others[child_column_key]
             child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}={child_column_value})'
+
             node_text = f'{child_column_key}={child_column_value}'
+            child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN
             if child_column_value == "":
                 node_text = f'{child_column_key}'
+                child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN_WITHOUT_VALUE
 
-            child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN
             if child_column_key == explored_column:
                 child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN_VISITED
 
             child_node = Node(
                 child_path,
-                parent_node.full_path,
+                parent_node,
                 child_node_type,
                 child_column_value,
                 child_table_name
@@ -337,63 +392,129 @@ def add_children_to_tree(
             add_to_tree(child_node, node_text)
 
             if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
-                dummy_node = Node(f'{child_path}/(double-click)', child_path, NodeTypes.DUMMY, -1, "dummy")
+                dummy_node = Node(f'{child_path}/(double-click)', child_node, NodeTypes.DUMMY, -1, "dummy")
                 add_to_tree(dummy_node, f'(double click parent to fetch)')
 
         else:
             node_text = f'{child_column_key}={child_column_value}'
+            child_node_type = NodeTypes.LEAF
             if child_column_value == "":
                 node_text = f'{child_column_key}'
+                child_node_type = NodeTypes.LEAF_WITHOUT_VALUE
             child_node = Node(
                 f'{parent_node.full_path}/({child_column_key}={child_column_value})',
-                parent_node.full_path,
-                NodeTypes.LEAF,
+                parent_node,
+                child_node_type,
                 child_column_value,
                 child_column_key
             )
             add_to_tree(child_node, node_text)
 
 
-# parse input
-cli = argparse.ArgumentParser()
-cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
-cli.add_argument("--depth", nargs="?", type=int,  default=3, help="")
-cli.add_argument("--debug", nargs="?", type=bool, default=False, help="")
-cli.add_argument("--env",   nargs="?", type=str,  default="local", help="")
-cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
-args = cli.parse_args()
-table = args.table
-depth = args.depth
-row_id = args.depth
+global my_cursor, tree
 
-# database
-my_db = get_my_db(args.env)
-my_cursor = my_db.cursor()
 
-# create the main window with a Treeview widget
-root = tk.Tk()
-root.geometry("1000x1000")
-root.title("Expandable Tree")
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(0, weight=1)
-tree = ttk.Treeview(root)
-tree.grid(row=0, column=0, sticky="nsew")  # Use grid layout and sticky option
-tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
-tree.tag_configure(NodeTypes.LEAF.name,                             foreground='black', background='white')
-tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name,           foreground='black', background='#cccccc')
-tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN_VISITED.name,   foreground='grey',  background='white')
-tree.tag_configure(NodeTypes.PARENT.name,                           foreground='black', background='#f5c84c')
-tree.tag_configure(NodeTypes.PARENT_VISITED.name,                   foreground='grey',  background='white')
-tree.bind("<<TreeviewOpen>>", toggle_node)
-style_name = "Custom.Treeview"
-ttk.Style().configure(style=style_name, indent=100)
-tree.config(style=style_name)
+def main():
+    global my_cursor, tree
+    # parse input
+    cli = argparse.ArgumentParser()
+    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
+    cli.add_argument("--debug", nargs="?", type=bool, default=False, help="")
+    cli.add_argument("--env",   nargs="?", type=str,  default="local", help="")
+    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
+    args = cli.parse_args()
+    table = args.table
+    row_id = args.id
 
-root_node_path = f"{table}(id={row_id})"
-root_node = Node(root_node_path, "", NodeTypes.CHILDREN_WITH_CHILDREN, row_id, table)
-add_to_tree(root_node, table)
-dumb_node = Node(f'{root_node_path}/(double-click)', root_node_path, NodeTypes.DUMMY, -1, "dummy")
-add_to_tree(dumb_node, '')
-root.mainloop()
+    # database
+    my_db = get_my_db(args.env)
+    my_cursor = my_db.cursor()
 
-test
+    # create the main window with a Treeview widget
+    root = tk.Tk()
+    root.geometry("1000x1000")
+    root.title("Expandable Tree")
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+    tree = ttk.Treeview(root)
+    tree.grid(row=0, column=0, sticky="nsew")  # Use grid layout and sticky option
+    tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
+
+    tree.tag_configure(NodeTypes.LEAF.name,                                 foreground='black', background='white')
+    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name,               foreground='black', background='#cccccc')
+    tree.tag_configure(NodeTypes.PARENT.name,                               foreground='black', background='#f5c84c')
+
+    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN_VISITED.name,       foreground='grey',  background='white')
+    tree.tag_configure(NodeTypes.PARENT_VISITED.name,                       foreground='grey',  background='white')
+    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN_WITHOUT_VALUE.name, foreground='grey',  background='white')
+    tree.tag_configure(NodeTypes.LEAF_WITHOUT_VALUE.name,                   foreground='grey',  background='white')
+
+    tree.bind("<<TreeviewOpen>>", toggle_node)
+    style_name = "Custom.Treeview"
+    ttk.Style().configure(style=style_name, indent=65)
+    tree.config(style=style_name)
+
+    root_node_path = f"{table}(id={row_id})"
+    parent_root_node = Node("", None, NodeTypes.DUMMY, -1, "")
+    root_node = Node(root_node_path, parent_root_node, NodeTypes.CHILDREN_WITH_CHILDREN, row_id, table)
+    add_to_tree(root_node, f'{table} (id={row_id})')
+    fetch_children(root_node_path)
+    tree.item(root_node_path, open=True)
+    dumb_node = Node(f'{root_node_path}/(double-click)', root_node, NodeTypes.DUMMY, -1, "dummy")
+    add_to_tree(dumb_node, '')
+    root.mainloop()
+
+
+def pretty(d, indent=0):
+    for key, value in d.items():
+        print('\t' * indent + '"' + str(key) + '":')
+        if isinstance(value, dict):
+            pretty(value, indent+1)
+        else:
+            print('\t' * (indent+1) + str(value))
+
+
+def test_get_parents_1():
+    global my_cursor
+    my_db = get_my_db("prod")
+    my_cursor = my_db.cursor()
+    columns, parent_rows = get_parents("users", "id", 1)
+
+    print(json.dumps(columns, sort_keys=True, indent=4))
+    print(pretty(parent_rows[0]))
+
+
+def test_get_parents_0():
+    global my_cursor
+    my_db = get_my_db("prod")
+    my_cursor = my_db.cursor()
+    columns, parent_rows = get_parents("users", "user_settings_id", 9999999)
+
+    print(json.dumps(columns, sort_keys=True, indent=4))
+    print(pretty(parent_rows[0]))
+
+
+def test_get_children():
+    global my_cursor
+    my_db = get_my_db("prod")
+    my_cursor = my_db.cursor()
+    columns, parent_rows = get_children("users", 1)
+
+    print(json.dumps(columns, sort_keys=True, indent=4))
+    print(pretty(parent_rows[0]))
+
+
+def test_get_primary_key():
+    global my_cursor
+    my_db = get_my_db("prod")
+    my_cursor = my_db.cursor()
+    primary_key1 = get_primary_key_of_table("users")
+    print(primary_key1)
+
+
+if __name__ == "__main__":
+    main()
+    # test_get_primary_key()
+    # test_get_parents_1()
+    # test_get_parents_0()
+    # test_get_children()
