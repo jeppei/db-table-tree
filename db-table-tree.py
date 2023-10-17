@@ -20,15 +20,15 @@ class NodeType:
 
 class NodeTypes:
     CHILDREN_WITH_CHILDREN = (
-        NodeType('Child with children              ', '>>'))
+        NodeType('Child with children',               '>>'))
     PARENT = (
-        NodeType('Parent                           ', '<<'))
+        NodeType('Parent',                            '<<'))
     PARENT_LIST_NODE = (
-        NodeType('Parent list node                 ', '<>'))
+        NodeType('Parent list node',                  '<>'))
     LEAF = (
-        NodeType('Leaf                             ', '--'))
+        NodeType('Leaf',                              '--'))
     DUMMY = (
-        NodeType('Dummy                            ', '..'))
+        NodeType('Dummy',                             '..'))
 
 
 class NodeTags:
