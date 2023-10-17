@@ -21,22 +21,19 @@ class NodeType:
 class NodeTypes:
     CHILDREN_WITH_CHILDREN = (
         NodeType('Child with children              ', '>>'))
-    CHILDREN_WITH_CHILDREN_WITHOUT_VALUE = (
-        NodeType('Child with children without value', '>>'))
-    CHILDREN_WITH_CHILDREN_VISITED = (
-        NodeType('Child with children (visited)    ', '->'))
     PARENT = (
         NodeType('Parent                           ', '<<'))
-    PARENT_VISITED = (
-        NodeType('Parent (visited)                 ', '<-'))
     PARENT_LIST_NODE = (
         NodeType('Parent list node                 ', '<>'))
     LEAF = (
         NodeType('Leaf                             ', '--'))
-    LEAF_WITHOUT_VALUE = (
-        NodeType('Leaf without value               ', '--'))
     DUMMY = (
         NodeType('Dummy                            ', '..'))
+
+
+class NodeTags:
+    NO_VALUE = "NoValue"
+    VISITED = "Visited"
 
 
 class Node:
@@ -47,14 +44,16 @@ class Node:
         node_type,
         node_id,
         table_name,
+        visited,
         parent_column_name=None,
-        parent_column_name_value=-1
+        parent_column_name_value=None,
     ):
         self.full_path = full_path
         self.parent_node = parent_node
         self.node_type = node_type
         self.node_id = node_id
         self.table_name = table_name
+        self.visited = visited
 
         # For parents
         self.parent_column_name = parent_column_name
@@ -67,33 +66,33 @@ def debug(*print_args):
 
 
 def get_my_db(env):
-    debug("Connecting to the database")
 
     if env == "dev" or env == "local":
-        host = os.environ['DATABASE_HOST']
-        port = os.environ['DATABASE_PORT']
-        database = os.environ['DATABASE_NAME']
-        user = os.environ['DATABASE_USER']
-        password = os.environ['DATABASE_PASSWORD']
+        host = os.environ['LOCAL_DATABASE_HOST']
+        port = os.environ['LOCAL_DATABASE_PORT']
+        database = os.environ['LOCAL_DATABASE_NAME']
+        user = os.environ['LOCAL_DATABASE_USER']
+        password = os.environ['LOCAL_DATABASE_PASSWORD']
 
     elif env == "test":
-        host = os.environ['DATABASE_TEST_HOST']
-        port = os.environ['DATABASE_TEST_PORT']
-        database = os.environ['DATABASE_TEST_NAME']
-        user = os.environ['DATABASE_TEST_USER']
-        password = os.environ['DATABASE_TEST_PASSWORD']
+        host = os.environ['TEST_DATABASE_HOST']
+        port = os.environ['TEST_DATABASE_PORT']
+        database = os.environ['TEST_DATABASE_NAME']
+        user = os.environ['TEST_DATABASE_USER']
+        password = os.environ['TEST_DATABASE_PASSWORD']
 
     elif env == "prod":
-        host = os.environ['DATABASE_PROD_HOST']
-        port = os.environ['DATABASE_PROD_PORT']
-        database = os.environ['DATABASE_PROD_NAME']
-        user = os.environ['DATABASE_PROD_USER']
-        password = os.environ['DATABASE_PROD_PASSWORD']
+        host = os.environ['PROD_DATABASE_HOST']
+        port = os.environ['PROD_DATABASE_PORT']
+        database = os.environ['PROD_DATABASE_NAME']
+        user = os.environ['PROD_DATABASE_USER']
+        password = os.environ['PROD_DATABASE_PASSWORD']
 
     else:
         debug("Invalid environment.")
         sys.exit()
 
+    debug(f'Connecting to the {env} database on {host}/{database}:{port} with user {user}')
     return mysql.connector.connect(
         host=host,
         port=port,
@@ -108,18 +107,25 @@ def add_to_tree(node, node_text):
         return False
     debug(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
     nodes[node.full_path] = node
+
+    tags = (node.node_type.name, )
+    if node.node_id == "" or node.node_id is None:
+        tags = tags + (NodeTags.NO_VALUE, )
+    if node.visited:
+        tags = tags + (NodeTags.VISITED, )
+
     tree.insert(
         node.parent_node.full_path,
         10000,
         node.full_path,
         text=node_text,
-        tags=(node.node_type.name,)
+        tags=tags
     )
     return True
 
 
 def get_children(table_name, property_value):
-    if property_value == "" or property_value == "None" or property_value is None or property_value == -1:
+    if property_value == "" or property_value == "None" or property_value is None:
         query = f"""
             select *
             from {table_name}
@@ -187,14 +193,13 @@ def get_primary_key_of_table(table_name):
     return primary_keys
 
 
+def has_no_value(variable):
+    return variable == "" or variable == "None" or variable is None
+
+
 def get_parents(other_table_name, other_table_column_key, other_table_column_value):
 
-    if (
-        other_table_column_value == "" or
-        other_table_column_value == "None" or
-        other_table_column_value is None or
-        other_table_column_value == -1
-    ):
+    if has_no_value(other_table_column_value):
         query = f"""
             SELECT *
             FROM {other_table_name}
@@ -281,12 +286,14 @@ def fetch_children(parent_path):
 
             id_string = ""
             node_type = NodeTypes.PARENT_LIST_NODE
+            list_node_expanded_as_parent = False
             if len(primary_keys) == 1:
-                list_node_expanded_as_parent = new_parent[primary_keys[0]] == parent_node.parent_node.parent_node.node_id
+
                 if new_parent[primary_keys[0]] != "":
                     id_string = f'({primary_keys[0]}={new_parent[primary_keys[0]]})'
-                if list_node_expanded_as_parent:
-                    node_type = NodeTypes.PARENT_VISITED
+
+                list_node_expanded_as_parent = (
+                        new_parent[primary_keys[0]] == parent_node.parent_node.parent_node.node_id)
 
             parent_list_node = Node(
                 f'{parent_path}/{parent_list_number}',
@@ -294,11 +301,12 @@ def fetch_children(parent_path):
                 node_type,
                 None,
                 None,
+                list_node_expanded_as_parent
             )
 
             add_to_tree(parent_list_node, f'{parent_list_number}: {parent_node.table_name} {id_string}')
 
-            if node_type == NodeTypes.PARENT_VISITED:
+            if list_node_expanded_as_parent:
                 continue
 
             add_children_to_tree(
@@ -346,8 +354,7 @@ def add_children_to_tree(
         child_column_key = relations_from_others[child_table_name]
 
         child_node_type = NodeTypes.PARENT
-        if child_column_key == explored_column:
-            child_node_type = NodeTypes.PARENT_VISITED
+        visited = child_column_key == explored_column
 
         child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
         child_node = Node(
@@ -356,13 +363,21 @@ def add_children_to_tree(
             child_node_type,
             parent_node.node_id,
             child_table_name,
+            visited,
             child_column_key,
             parent_node.node_id,
         )
         add_to_tree(child_node, f'[{child_table_name}.{child_column_key}]')
 
         if child_node_type == NodeTypes.PARENT:
-            dummy_node = Node(f'{child_path}/(double-click)', child_node, NodeTypes.DUMMY, -1, "dummy",)
+            dummy_node = Node(
+                f'{child_path}/(double-click)',
+                child_node,
+                NodeTypes.DUMMY,
+                None,
+                "dummy",
+                False,
+            )
             add_to_tree(dummy_node, f'(double click parent to fetch)')
 
     for child_column_key in column_keys:
@@ -377,22 +392,28 @@ def add_children_to_tree(
             child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN
             if child_column_value == "":
                 node_text = f'{child_column_key}'
-                child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN_WITHOUT_VALUE
 
-            if child_column_key == explored_column:
-                child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN_VISITED
+            visited = child_column_key == explored_column
 
             child_node = Node(
                 child_path,
                 parent_node,
                 child_node_type,
                 child_column_value,
-                child_table_name
+                child_table_name,
+                visited,
             )
             add_to_tree(child_node, node_text)
 
             if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
-                dummy_node = Node(f'{child_path}/(double-click)', child_node, NodeTypes.DUMMY, -1, "dummy")
+                dummy_node = Node(
+                    f'{child_path}/(double-click)',
+                    child_node,
+                    NodeTypes.DUMMY,
+                    visited,
+                    None,
+                    "dummy"
+                )
                 add_to_tree(dummy_node, f'(double click parent to fetch)')
 
         else:
@@ -400,13 +421,13 @@ def add_children_to_tree(
             child_node_type = NodeTypes.LEAF
             if child_column_value == "":
                 node_text = f'{child_column_key}'
-                child_node_type = NodeTypes.LEAF_WITHOUT_VALUE
             child_node = Node(
                 f'{parent_node.full_path}/({child_column_key}={child_column_value})',
                 parent_node,
                 child_node_type,
                 child_column_value,
-                child_column_key
+                child_column_key,
+                False,
             )
             add_to_tree(child_node, node_text)
 
@@ -420,7 +441,7 @@ def main():
     cli = argparse.ArgumentParser()
     cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
     cli.add_argument("--debug", nargs="?", type=bool, default=False, help="")
-    cli.add_argument("--env",   nargs="?", type=str,  default="local", help="")
+    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
     cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
     args = cli.parse_args()
     table = args.table
@@ -440,14 +461,11 @@ def main():
     tree.grid(row=0, column=0, sticky="nsew")  # Use grid layout and sticky option
     tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
 
-    tree.tag_configure(NodeTypes.LEAF.name,                                 foreground='black', background='white')
-    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name,               foreground='black', background='#cccccc')
-    tree.tag_configure(NodeTypes.PARENT.name,                               foreground='black', background='#f5c84c')
-
-    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN_VISITED.name,       foreground='grey',  background='white')
-    tree.tag_configure(NodeTypes.PARENT_VISITED.name,                       foreground='grey',  background='white')
-    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN_WITHOUT_VALUE.name, foreground='grey',  background='white')
-    tree.tag_configure(NodeTypes.LEAF_WITHOUT_VALUE.name,                   foreground='grey',  background='white')
+    tree.tag_configure(NodeTypes.LEAF.name, background='white')
+    tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, background='#cccccc')
+    tree.tag_configure(NodeTypes.PARENT.name, background='#f5c84c')
+    tree.tag_configure(NodeTags.NO_VALUE, foreground='grey')
+    tree.tag_configure(NodeTags.VISITED, foreground='grey')
 
     tree.bind("<<TreeviewOpen>>", toggle_node)
     style_name = "Custom.Treeview"
@@ -455,12 +473,33 @@ def main():
     tree.config(style=style_name)
 
     root_node_path = f"{table}(id={row_id})"
-    parent_root_node = Node("", None, NodeTypes.DUMMY, -1, "")
-    root_node = Node(root_node_path, parent_root_node, NodeTypes.CHILDREN_WITH_CHILDREN, row_id, table)
+    parent_root_node = Node(
+        "",
+        None,
+        NodeTypes.DUMMY,
+        None,
+        "",
+        False,
+    )
+    root_node = Node(
+        root_node_path,
+        parent_root_node,
+        NodeTypes.CHILDREN_WITH_CHILDREN,
+        row_id,
+        table,
+        False,
+    )
     add_to_tree(root_node, f'{table} (id={row_id})')
     fetch_children(root_node_path)
     tree.item(root_node_path, open=True)
-    dumb_node = Node(f'{root_node_path}/(double-click)', root_node, NodeTypes.DUMMY, -1, "dummy")
+    dumb_node = Node(
+        f'{root_node_path}/(double-click)',
+        root_node,
+        NodeTypes.DUMMY,
+        None,
+        "dummy",
+        False
+    )
     add_to_tree(dumb_node, '')
     root.mainloop()
 
