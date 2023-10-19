@@ -457,8 +457,20 @@ def main():
     root.title("Expandable Tree")
     root.grid_rowconfigure(0, weight=1)
     root.grid_columnconfigure(0, weight=1)
+
+    # Create a Combobox widget
+    values = ["Option 1", "Option 2", "Option 3"]
+    combo_box = ttk.Combobox(root, values=values)
+    combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="ew")  # Use grid layout manager
+    root.grid_rowconfigure(0, weight=0)
+
+    # Create a Text widget
+    text_box = tk.Text(root, height=1, width=50)
+    text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
+
+    # Create the tree
     tree = ttk.Treeview(root)
-    tree.grid(row=0, column=0, sticky="nsew")  # Use grid layout and sticky option
+    tree.grid(row=1, column=0, columnspan=2, sticky="nsew")  # Use grid layout and sticky option
     tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
 
     tree.tag_configure(NodeTypes.LEAF.name, background='white')
@@ -501,6 +513,7 @@ def main():
         False
     )
     add_to_tree(dumb_node, '')
+
     root.mainloop()
 
 
