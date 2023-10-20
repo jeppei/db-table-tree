@@ -1,14 +1,10 @@
-import sys
-
-import mysql.connector  # pip install mysql-connector-python
 import argparse
-import os
 import tkinter as tk
 from tkinter import ttk
-import json
 
+from db import DB
+from db_navigator import DBNavigator
 
-log_debug = True
 nodes = {}
 
 
@@ -60,52 +56,10 @@ class Node:
         self.parent_column_name_value = parent_column_name_value
 
 
-def debug(*print_args):
-    if log_debug:
-        print(*print_args)
-
-
-def get_my_db(env):
-
-    if env == "dev" or env == "local":
-        host = os.environ['LOCAL_DATABASE_HOST']
-        port = os.environ['LOCAL_DATABASE_PORT']
-        database = os.environ['LOCAL_DATABASE_NAME']
-        user = os.environ['LOCAL_DATABASE_USER']
-        password = os.environ['LOCAL_DATABASE_PASSWORD']
-
-    elif env == "test":
-        host = os.environ['TEST_DATABASE_HOST']
-        port = os.environ['TEST_DATABASE_PORT']
-        database = os.environ['TEST_DATABASE_NAME']
-        user = os.environ['TEST_DATABASE_USER']
-        password = os.environ['TEST_DATABASE_PASSWORD']
-
-    elif env == "prod":
-        host = os.environ['PROD_DATABASE_HOST']
-        port = os.environ['PROD_DATABASE_PORT']
-        database = os.environ['PROD_DATABASE_NAME']
-        user = os.environ['PROD_DATABASE_USER']
-        password = os.environ['PROD_DATABASE_PASSWORD']
-
-    else:
-        debug("Invalid environment.")
-        sys.exit()
-
-    debug(f'Connecting to the {env} database on {host}/{database}:{port} with user {user}')
-    return mysql.connector.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        database=database
-    )
-
-
 def add_to_tree(node, node_text):
     if tree.exists(node.full_path):
         return False
-    debug(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
+    print(f'{node.node_type.direction}: Adding {node.node_type.name}: {node.full_path}')
     nodes[node.full_path] = node
 
     tags = (node.node_type.name, )
@@ -124,132 +78,8 @@ def add_to_tree(node, node_text):
     return True
 
 
-def get_children(table_name, property_value):
-    if property_value == "" or property_value == "None" or property_value is None:
-        query = f"""
-            select *
-            from {table_name}
-            limit 0
-        """
-    else:
-        query = f"""
-            select *
-            from {table_name}
-            where {table_name}.id={property_value}
-            limit 1
-        """
-
-    debug(query)
-    my_cursor.execute(query)
-    resulting_rows = my_cursor.fetchall()
-
-    columns = [i[0] for i in my_cursor.description]
-
-    rows = []
-    if len(resulting_rows) == 0:
-        rows.append({})
-        for c in range(len(columns)):
-            rows[0][columns[c]] = ""
-    else:
-        for r in range(len(resulting_rows)):
-            rows.append({})
-            for c in range(len(columns)):
-                rows[r][columns[c]] = resulting_rows[r][c]
-
-    return columns, rows
-
-
-def get_children_with_children(table_name):
-    query = f"""
-            SELECT REFERENCED_TABLE_NAME, COLUMN_NAME
-            FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
-            WHERE TABLE_SCHEMA = SCHEMA()
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-            AND TABLE_NAME = '{table_name}';
-    """
-    debug(query)
-    my_cursor.execute(query)
-    data = my_cursor.fetchall()
-
-    relations = {}
-    for d in data:
-        relations[d[1]] = d[0]
-
-    return relations
-
-
-def get_primary_key_of_table(table_name):
-    query = f"""
-        SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'
-    """
-    debug(query)
-    my_cursor.execute(query)
-    resulting_rows = my_cursor.fetchall()
-
-    primary_keys = []
-    for row in resulting_rows:
-        primary_keys.append(row[4])
-
-    return primary_keys
-
-
 def has_no_value(variable):
-    return variable == "" or variable == "None" or variable is None
-
-
-def get_parents(other_table_name, other_table_column_key, other_table_column_value):
-
-    if has_no_value(other_table_column_value):
-        query = f"""
-            SELECT *
-            FROM {other_table_name}
-            LIMIT 0;
-        """
-    else:
-        query = f"""
-            SELECT *
-            FROM {other_table_name}
-            WHERE {other_table_column_key}={other_table_column_value}
-        """
-    debug(query)
-    my_cursor.execute(query)
-    resulting_rows = my_cursor.fetchall()
-
-    columns = [i[0] for i in my_cursor.description]
-
-    rows = []
-    if len(resulting_rows) == 0:
-        rows.append({})
-        for c in range(len(columns)):
-            rows[0][columns[c]] = ""
-    else:
-        for r in range(len(resulting_rows)):
-            rows.append({})
-            for c in range(len(columns)):
-                rows[r][columns[c]] = resulting_rows[r][c]
-
-    return columns, rows
-
-
-def get_parent_table_names_and_column_relation(table_name):
-    query = f"""
-            SELECT TABLE_NAME, COLUMN_NAME
-            FROM `INFORMATION_SCHEMA`.`KEY_COLUMN_USAGE`
-            WHERE TABLE_SCHEMA = SCHEMA()
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-            AND REFERENCED_TABLE_NAME= '{table_name}';
-    """
-    debug(query)
-    my_cursor.execute(query)
-    data = my_cursor.fetchall()
-
-    relations = {}
-    for d in data:
-        parent_table = d[0]
-        parent_table_column = d[1]
-        relations[parent_table] = parent_table_column
-
-    return relations
+    return variable is None or variable == "" or variable == "None"
 
 
 def toggle_node(event):
@@ -260,7 +90,7 @@ def toggle_node(event):
 def fetch_children(parent_path):
     message = f'# Expanding on {parent_path} #'
     line = '#' * len(message)
-    debug(f'\n{line}\n{message}\n{line}\n')
+    print(f'\n{line}\n{message}\n{line}\n')
     parent_node = nodes[parent_path]
     if parent_node.node_type == NodeTypes.LEAF:
         return
@@ -273,14 +103,14 @@ def fetch_children(parent_path):
         tree.delete(f'{parent_path}/(double-click)')
 
     if parent_node.node_type == NodeTypes.PARENT:
-        primary_keys = get_primary_key_of_table(parent_node.table_name)
-        new_parent_columns, new_parents = get_parents(
+        primary_keys = my_db_navigator.get_primary_key_of_table(parent_node.table_name)
+        new_parent_columns, new_parents = my_db_navigator.get_parents(
             parent_node.table_name,
             parent_node.parent_column_name,
             parent_node.parent_column_name_value
         )
-        new_parent_children_with_children = get_children_with_children(parent_node.table_name)
-        new_parent_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
+        new_parent_children_with_children = my_db_navigator.get_children_with_children(parent_node.table_name)
+        new_parent_parents = my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
         parent_list_number = 1
         for new_parent in new_parents:
 
@@ -321,16 +151,16 @@ def fetch_children(parent_path):
             parent_list_number = parent_list_number + 1
 
     if parent_node.node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
-        column_keys, column_values = get_children(parent_node.table_name, parent_node.node_id)
-        new_parent_children_with_children = get_children_with_children(parent_node.table_name)
-        new_parent_parents = get_parent_table_names_and_column_relation(parent_node.table_name)
+        column_keys, column_values = my_db_navigator.get_children(parent_node.table_name, parent_node.node_id)
+        new_parent_children_with_children = my_db_navigator.get_children_with_children(parent_node.table_name)
+        new_parent_parents = my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
 
-        # debug("")
-        # debug(f'table_name: {parent_node.table_name}')
-        # debug(f"relations_to_others: {child_children}")
-        # debug(f'relations_from_others: {child_parents}')
-        # debug(f'column_keys: {column_keys}')
-        # debug(f'column_values: {column_values}')
+        # print("")
+        # print(f'table_name: {parent_node.table_name}')
+        # print(f"relations_to_others: {child_children}")
+        # print(f'relations_from_others: {child_parents}')
+        # print(f'column_keys: {column_keys}')
+        # print(f'column_values: {column_values}')
 
         add_children_to_tree(
             new_parent_parents,
@@ -432,15 +262,14 @@ def add_children_to_tree(
             add_to_tree(child_node, node_text)
 
 
-global my_cursor, tree
+global my_db_navigator, tree
 
 
 def main():
-    global my_cursor, tree
+    global my_db_navigator, tree
     # parse input
     cli = argparse.ArgumentParser()
     cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
-    cli.add_argument("--debug", nargs="?", type=bool, default=False, help="")
     cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
     cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
     args = cli.parse_args()
@@ -448,8 +277,7 @@ def main():
     row_id = args.id
 
     # database
-    my_db = get_my_db(args.env)
-    my_cursor = my_db.cursor()
+    my_db_navigator = DBNavigator(DB(args.env))
 
     # create the main window with a Treeview widget
     root = tk.Tk()
@@ -517,56 +345,5 @@ def main():
     root.mainloop()
 
 
-def pretty(d, indent=0):
-    for key, value in d.items():
-        print('\t' * indent + '"' + str(key) + '":')
-        if isinstance(value, dict):
-            pretty(value, indent+1)
-        else:
-            print('\t' * (indent+1) + str(value))
-
-
-def test_get_parents_1():
-    global my_cursor
-    my_db = get_my_db("prod")
-    my_cursor = my_db.cursor()
-    columns, parent_rows = get_parents("users", "id", 1)
-
-    print(json.dumps(columns, sort_keys=True, indent=4))
-    print(pretty(parent_rows[0]))
-
-
-def test_get_parents_0():
-    global my_cursor
-    my_db = get_my_db("prod")
-    my_cursor = my_db.cursor()
-    columns, parent_rows = get_parents("users", "user_settings_id", 9999999)
-
-    print(json.dumps(columns, sort_keys=True, indent=4))
-    print(pretty(parent_rows[0]))
-
-
-def test_get_children():
-    global my_cursor
-    my_db = get_my_db("prod")
-    my_cursor = my_db.cursor()
-    columns, parent_rows = get_children("users", 1)
-
-    print(json.dumps(columns, sort_keys=True, indent=4))
-    print(pretty(parent_rows[0]))
-
-
-def test_get_primary_key():
-    global my_cursor
-    my_db = get_my_db("prod")
-    my_cursor = my_db.cursor()
-    primary_key1 = get_primary_key_of_table("users")
-    print(primary_key1)
-
-
 if __name__ == "__main__":
     main()
-    # test_get_primary_key()
-    # test_get_parents_1()
-    # test_get_parents_0()
-    # test_get_children()
