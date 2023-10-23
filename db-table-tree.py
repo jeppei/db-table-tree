@@ -220,40 +220,17 @@ def add_children_to_tree(
 global my_db_navigator, tree
 
 
-def main():
-    global my_db_navigator, tree
-    # parse input
-    cli = argparse.ArgumentParser()
-    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
-    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
-    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
-    args = cli.parse_args()
-    table = args.table
-    row_id = args.id
+def button_click():
+    global text_box, combo_box
+    text = text_box.get("1.0", "end-1c")
+    selected_value = combo_box.get()
+    print(f"Button clicked. Text: {text}. Selected value: {selected_value}")
 
-    # database
-    my_db_navigator = DBNavigator(DB(args.env))
 
-    # create the main window with a Treeview widget
-    root = tk.Tk()
-    root.geometry("1000x1000")
-    root.title("Expandable Tree")
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-
-    # Create a Combobox widget
-    values = ["Option 1", "Option 2", "Option 3"]
-    combo_box = ttk.Combobox(root, values=values)
-    combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="ew")  # Use grid layout manager
-    root.grid_rowconfigure(0, weight=0)
-
-    # Create a Text widget
-    text_box = tk.Text(root, height=1, width=50)
-    text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
-
-    # Create the tree
+def add_tree_to_root(root, table, row_id):
+    global tree
     tree = ttk.Treeview(root, height=1000)
-    tree.grid(row=1, column=0, columnspan=2, sticky="nsew")  # Use grid layout and sticky option
+    tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
     tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
 
     tree.tag_configure(NodeTypes.LEAF.name, background='white')
@@ -296,6 +273,45 @@ def main():
         False
     )
     add_to_tree(dumb_node, '')
+
+
+def main():
+    global my_db_navigator, tree, text_box, combo_box
+    # parse input
+    cli = argparse.ArgumentParser()
+    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
+    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
+    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
+    args = cli.parse_args()
+    table = args.table
+    row_id = args.id
+
+    # database
+    my_db_navigator = DBNavigator(DB(args.env))
+
+    # create the main window with a Treeview widget
+    root = tk.Tk()
+    root.geometry("1000x1000")
+    root.title("Expandable Tree")
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+
+    # Create a Combobox widget
+    all_table_names = my_db_navigator.get_all_table_names()
+    combo_box = ttk.Combobox(root, values=all_table_names)
+    combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="ew")  # Use grid layout manager
+    root.grid_rowconfigure(0, weight=0)
+
+    # Create a Text widget
+    text_box = tk.Text(root, height=1, width=50)
+    text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
+
+    # Create a button
+    button = tk.Button(root, height=1, text="GO!", command=button_click)
+    button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
+
+    # Create the tree
+    add_tree_to_root(root, table, row_id)
 
     root.mainloop()
 

@@ -1,6 +1,3 @@
-import sys
-sys.path.append('/db-table-tree/')
-
 from node_type import NodeType
 
 

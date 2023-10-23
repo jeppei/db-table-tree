@@ -122,4 +122,16 @@ class DBNavigator:
 
         return relations
 
+    def get_all_table_names(self):
+        query = "SHOW TABLES"
+
+        with self._db:
+            resulting_rows, _ = self._db.execute_query(query)
+
+        table_names = []
+        for row in resulting_rows:
+            table_names.append(row[0])
+
+        return table_names
+
 
