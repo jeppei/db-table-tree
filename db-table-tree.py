@@ -297,7 +297,7 @@ def main():
     text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
 
     # Create the tree
-    tree = ttk.Treeview(root)
+    tree = ttk.Treeview(root, height=1000)
     tree.grid(row=1, column=0, columnspan=2, sticky="nsew")  # Use grid layout and sticky option
     tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
 
