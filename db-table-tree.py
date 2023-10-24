@@ -220,13 +220,6 @@ def add_children_to_tree(
 global my_db_navigator, tree
 
 
-def button_click():
-    global text_box, combo_box
-    text = text_box.get("1.0", "end-1c")
-    selected_value = combo_box.get()
-    print(f"Button clicked. Text: {text}. Selected value: {selected_value}")
-
-
 def add_tree_to_root(root, table, row_id):
     global tree
     tree = ttk.Treeview(root, height=1000)
@@ -275,8 +268,23 @@ def add_tree_to_root(root, table, row_id):
     add_to_tree(dumb_node, '')
 
 
+def button_click():
+    global text_box, combo_box
+    row_id = text_box.get("1.0", "end-1c")
+    table = combo_box.get()
+
+    # Create the tree
+    add_tree_to_root(root, table, row_id)
+
+
+def on_enter_pressed(event):
+    if text_box == root.focus_get():
+        button_click()
+        return 'break'  # Prevents the newline from being inserted
+
+
 def main():
-    global my_db_navigator, tree, text_box, combo_box
+    global my_db_navigator, tree, text_box, combo_box, root
     # parse input
     cli = argparse.ArgumentParser()
     cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
@@ -300,18 +308,20 @@ def main():
     all_table_names = my_db_navigator.get_all_table_names()
     combo_box = ttk.Combobox(root, values=all_table_names)
     combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="ew")  # Use grid layout manager
+    if table in combo_box['values']:
+        combo_box.set(table)
+
     root.grid_rowconfigure(0, weight=0)
 
     # Create a Text widget
-    text_box = tk.Text(root, height=1, width=50)
+    text_box = tk.Text(root, height=1, width=50, wrap="none")
+    text_box.insert("1.0", row_id)
     text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
+    text_box.bind("<Return>", on_enter_pressed)
 
     # Create a button
     button = tk.Button(root, height=1, text="GO!", command=button_click)
     button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
-
-    # Create the tree
-    add_tree_to_root(root, table, row_id)
 
     root.mainloop()
 
