@@ -8,6 +8,7 @@ from node_tags import NodeTags
 from node_types import NodeTypes
 from node import Node
 
+
 nodes = {}
 
 
@@ -35,11 +36,6 @@ def add_to_tree(node, node_text):
 
 def has_no_value(variable):
     return variable is None or variable == "" or variable == "None"
-
-
-def toggle_node(event):
-    parent_path = tree.selection()[0]
-    fetch_children(parent_path)
 
 
 def fetch_children(parent_path):
@@ -217,9 +213,6 @@ def add_children_to_tree(
             add_to_tree(child_node, node_text)
 
 
-global my_db_navigator, tree
-
-
 def add_tree_to_root(root, table, row_id):
     global tree
     tree = ttk.Treeview(root, height=1000)
@@ -268,6 +261,11 @@ def add_tree_to_root(root, table, row_id):
     add_to_tree(dumb_node, '')
 
 
+def toggle_node(event):
+    parent_path = tree.selection()[0]
+    fetch_children(parent_path)
+
+
 def button_click():
     global text_box, combo_box
     row_id = text_box.get("1.0", "end-1c")
@@ -283,19 +281,14 @@ def on_enter_pressed(event):
         return 'break'  # Prevents the newline from being inserted
 
 
-def main():
+global my_db_navigator, tree
+
+
+def main(table, row_id, env):
     global my_db_navigator, tree, text_box, combo_box, root
-    # parse input
-    cli = argparse.ArgumentParser()
-    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
-    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
-    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
-    args = cli.parse_args()
-    table = args.table
-    row_id = args.id
 
     # database
-    my_db_navigator = DBNavigator(DB(args.env))
+    my_db_navigator = DBNavigator(DB(env))
 
     # create the main window with a Treeview widget
     root = tk.Tk()
@@ -327,4 +320,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # parse input
+    cli = argparse.ArgumentParser()
+    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
+    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
+    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
+    args = cli.parse_args()
+    table = args.table
+    row_id = args.id
+    env = args.env
+    main(table, row_id, env)
