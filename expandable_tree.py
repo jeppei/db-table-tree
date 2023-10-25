@@ -1,4 +1,3 @@
-import argparse
 import tkinter as tk
 from tkinter import ttk
 
@@ -301,17 +300,3 @@ class ExpandableTree:
         if self.text_box == self.root.focus_get():
             self.button_click()
             return 'break'  # Prevents the newline from being inserted
-
-
-if __name__ == "__main__":
-    cli = argparse.ArgumentParser()
-    cli.add_argument("--table", nargs="?", type=str,  default="none", help="")
-    cli.add_argument("--env",   nargs="?", type=str,  default="prod", help="")
-    cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
-    args = cli.parse_args()
-
-    expandable_tree = ExpandableTree(
-        args.table,
-        args.id,
-        args.env
-    )
