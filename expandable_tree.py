@@ -59,10 +59,12 @@ class ExpandableTree:
         self.nodes[node.full_path] = node
 
         tags = (node.node_type.name, )
-        if node.node_id == "" or node.node_id is None:
-            tags = tags + (NodeTags.NO_VALUE, )
-        if node.visited:
-            tags = tags + (NodeTags.VISITED, )
+
+        if node.node_type != NodeTypes.PARENT:
+            if node.node_id == "" or node.node_id is None:
+                tags = tags + (NodeTags.NO_VALUE, )
+            if node.visited:
+                tags = tags + (NodeTags.VISITED, )
 
         self.tree.insert(
             node.parent_node.full_path,
@@ -90,7 +92,7 @@ class ExpandableTree:
 
         if parent_node.node_type == NodeTypes.PARENT:
             primary_keys = self.my_db_navigator.get_primary_key_of_table(parent_node.table_name)
-            new_parent_columns, new_parents = self.my_db_navigator.get_parents(
+            new_parent_columns, new_parents, has_parents = self.my_db_navigator.get_parents(
                 parent_node.table_name,
                 parent_node.parent_column_name,
                 parent_node.parent_column_name_value
@@ -115,12 +117,12 @@ class ExpandableTree:
                     f'{parent_path}/{parent_list_number}',
                     parent_node,
                     node_type,
-                    None,
+                    (node_id := "123123123123123" if has_parents else ""),
                     None,
                     list_node_expanded_as_parent
                 )
 
-                self.add_to_tree(parent_list_node, f'{parent_list_number}: {parent_node.table_name} {id_string}')
+                self.add_to_tree(parent_list_node, f'{parent_node.table_name} {id_string}')
 
                 if list_node_expanded_as_parent:
                     continue

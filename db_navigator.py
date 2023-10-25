@@ -90,17 +90,18 @@ class DBNavigator:
             resulting_rows, columns = self._db.execute_query(query)
 
         rows = []
-        if len(resulting_rows) == 0:
-            rows.append({})
-            for c in range(len(columns)):
-                rows[0][columns[c]] = ""
-        else:
+        has_rows = len(resulting_rows) > 0
+        if has_rows:
             for r in range(len(resulting_rows)):
                 rows.append({})
                 for c in range(len(columns)):
                     rows[r][columns[c]] = resulting_rows[r][c]
+        else:
+            rows.append({})
+            for c in range(len(columns)):
+                rows[0][columns[c]] = ""
 
-        return columns, rows
+        return columns, rows, has_rows
 
     def get_parent_table_names_and_column_relation(self, table_name):
         query = f"""

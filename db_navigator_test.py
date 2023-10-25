@@ -5,14 +5,14 @@ from db_navigator import DBNavigator
 
 
 def test_get_parents_1(db_navigator):
-    columns, parent_rows = db_navigator.get_parents("users", "id", 1)
+    columns, parent_rows, _ = db_navigator.get_parents("users", "id", 1)
 
     print(json.dumps(columns, sort_keys=True, indent=4))
     print(pretty(parent_rows[0]))
 
 
 def test_get_parents_0(db_navigator):
-    columns, parent_rows = db_navigator.get_parents("users", "user_settings_id", 9999999)
+    columns, parent_rows, _ = db_navigator.get_parents("users", "user_settings_id", 9999999)
 
     print(json.dumps(columns, sort_keys=True, indent=4))
     print(pretty(parent_rows[0]))
