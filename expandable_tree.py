@@ -1,15 +1,11 @@
-import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
 from db import DB
 from db_navigator import DBNavigator
 from node_tags import NodeTags
 from node_types import NodeTypes
 from node import Node
-
-
-def has_no_value(variable):
-    return variable is None or variable == "" or variable == "None"
+from themes import Themes
 
 
 class ExpandableTree:
@@ -24,30 +20,33 @@ class ExpandableTree:
         my_db_navigator = DBNavigator(DB(env))
 
         # create the main window with a Treeview widget
-        self.root = tk.Tk()
+
+        self.theme = Themes.minty
+
+        self.root = tkb.Window(themename=self.theme.name)
         self.root.geometry("1000x1000")
         self.root.title("Expandable Tree")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        self.tree = ttk.Treeview(self.root, height=1000)
+        self.tree = tkb.Treeview(self.root, height=1, show="tree")
 
         # Create a Combobox widget
         all_table_names = my_db_navigator.get_all_table_names()
-        self.combo_box = ttk.Combobox(self.root, values=all_table_names)
-        self.combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="ew")  # Use grid layout manager
+        self.combo_box = tkb.Combobox(self.root, values=all_table_names)
+        self.combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
         if table in self.combo_box['values']:
             self.combo_box.set(table)
 
         self.root.grid_rowconfigure(0, weight=0)
 
         # Create a Text widget
-        self.text_box = tk.Text(self.root, height=1, width=50, wrap="none")
+        self.text_box = tkb.Text(self.root, height=1, width=25, wrap="none")
         self.text_box.insert("1.0", row_id)
-        self.text_box.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
+        self.text_box.grid(row=0, column=1, padx=0, pady=0, sticky="ew")  # Use grid layout manager
         self.text_box.bind("<Return>", self.on_enter_pressed)
 
         # Create a button
-        button = tk.Button(self.root, height=1, text="GO!", command=self.button_click)
+        button = tkb.Button(self.root, text="GO!", command=self.button_click)
         button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
 
         self.root.mainloop()
@@ -60,10 +59,13 @@ class ExpandableTree:
 
         tags = (node.node_type.name, )
 
-        if not node.exist:
-            tags = tags + (NodeTags.NO_VALUE, )
-        if node.visited:
-            tags = tags + (NodeTags.VISITED, )
+        if (
+            (not node.exist and not node.parent_node.exist) or
+            (not node.exist and node.node_type == NodeTypes.PARENT_LIST_NODE)
+        ):
+            tags = (NodeTags.NO_VALUE, )
+        elif node.visited:
+            tags = (NodeTags.VISITED, )
 
         self.tree.insert(
             node.parent_node.full_path,
@@ -244,19 +246,20 @@ class ExpandableTree:
 
     def create_new_table_tree(self, table, row_id):
 
-        self.tree = ttk.Treeview(self.root, height=1000)
+        self.tree = tkb.Treeview(self.root, height=20, show="tree")
         self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
-        self.tree.column("#0", stretch=tk.YES)  # Allow the treeview column to expand
+        self.root.grid_rowconfigure(1, weight=1)
 
-        self.tree.tag_configure(NodeTypes.LEAF.name, background='white')
-        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, background='#cccccc')
-        self.tree.tag_configure(NodeTypes.PARENT.name, background='#f5c84c')
-        self.tree.tag_configure(NodeTags.NO_VALUE, foreground='grey')
-        self.tree.tag_configure(NodeTags.VISITED, foreground='yellow')
+        self.tree.tag_configure(NodeTypes.LEAF.name,                   foreground=self.theme.color.fg)
+        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=self.theme.color.info)
+        self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=self.theme.color.primary)
+        self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=self.theme.color.primary)
+        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=self.theme.color.border)
+        self.tree.tag_configure(NodeTags.VISITED,                      foreground=self.theme.color.success)
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
-        ttk.Style().configure(style=style_name, indent=65)
+        tkb.Style().configure(style=style_name, indent=30)
         self.tree.config(style=style_name)
 
         root_node_path = f"{table}(id={row_id})"
@@ -288,6 +291,38 @@ class ExpandableTree:
             False
         )
         self.add_to_tree(dumb_node, '')
+
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/primary', text='primary', tags=('primary', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/secondary', text='secondary', tags=('secondary', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/success', text='success', tags=('success', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/info', text='info', tags=('info', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/warning', text='warning', tags=('warning', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/danger', text='danger', tags=('danger', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/light', text='light', tags=('light', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/dark', text='dark', tags=('dark', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/bg', text='bg', tags=('bg', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/fg', text='fg', tags=('fg', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/selectbg', text='selectbg', tags=('selectbg', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/selectfg', text='selectfg', tags=('selectfg', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/border', text='border', tags=('border', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/inputfg', text='inputfg', tags=('inputfg', ))
+        # self.tree.insert(root_node_path, 1, f'{root_node_path}/inputbg', text='inputbg', tags=('inputbg', ))
+        #
+        # self.tree.tag_configure('primary',      foreground=self.theme.color.primary)
+        # self.tree.tag_configure('secondary',    foreground=self.theme.color.secondary)
+        # self.tree.tag_configure('success',      foreground=self.theme.color.success)
+        # self.tree.tag_configure('info',         foreground=self.theme.color.info)
+        # self.tree.tag_configure('warning',      foreground=self.theme.color.warning)
+        # self.tree.tag_configure('danger',       foreground=self.theme.color.danger)
+        # self.tree.tag_configure('light',        foreground=self.theme.color.light)
+        # self.tree.tag_configure('dark',         foreground=self.theme.color.dark)
+        # self.tree.tag_configure('bg',           foreground=self.theme.color.bg)
+        # self.tree.tag_configure('fg',           foreground=self.theme.color.fg)
+        # self.tree.tag_configure('selectbg',     foreground=self.theme.color.select_bg)
+        # self.tree.tag_configure('selectfg',     foreground=self.theme.color.select_fg)
+        # self.tree.tag_configure('border',       foreground=self.theme.color.border)
+        # self.tree.tag_configure('inputfg',      foreground=self.theme.color.input_fg)
+        # self.tree.tag_configure('inputbg',      foreground=self.theme.color.input_bg)
 
     def toggle_node(self, _):
         parent_path = self.tree.selection()[0]
