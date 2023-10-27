@@ -21,7 +21,8 @@ class ExpandableTree:
 
         # create the main window with a Treeview widget
 
-        self.theme = Themes.minty
+        self.theme = Themes.superhero
+        self.show_already_visited_parents = False
 
         self.root = tkb.Window(themename=self.theme.name)
         self.root.geometry("1000x1000")
@@ -126,7 +127,7 @@ class ExpandableTree:
 
                 self.add_to_tree(parent_list_node, f'{parent_node.table_name} {id_string}')
 
-                if list_node_expanded_as_parent:
+                if list_node_expanded_as_parent and not self.show_already_visited_parents:
                     continue
 
                 self.add_children_to_tree(
@@ -218,7 +219,9 @@ class ExpandableTree:
                 )
                 self.add_to_tree(child_node, node_text)
 
-                if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
+                hide_child_content = visited and not self.show_already_visited_parents
+
+                if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN and not hide_child_content:
                     dummy_node = Node(
                         f'{child_path}/(double-click)',
                         child_node,
