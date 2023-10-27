@@ -181,7 +181,7 @@ class ExpandableTree:
                 child_column_key,
                 parent_node.node_id,
             )
-            self.add_to_tree(child_node, f'[{child_table_name}.{child_column_key}]')
+            self.add_to_tree(child_node, f'[{child_table_name}]')
 
             if child_node_type == NodeTypes.PARENT:
                 dummy_node = Node(
