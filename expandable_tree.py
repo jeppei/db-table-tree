@@ -60,11 +60,10 @@ class ExpandableTree:
 
         tags = (node.node_type.name, )
 
-        if node.node_type != NodeTypes.PARENT:
-            if node.node_id == "" or node.node_id is None:
-                tags = tags + (NodeTags.NO_VALUE, )
-            if node.visited:
-                tags = tags + (NodeTags.VISITED, )
+        if not node.exist:
+            tags = tags + (NodeTags.NO_VALUE, )
+        if node.visited:
+            tags = tags + (NodeTags.VISITED, )
 
         self.tree.insert(
             node.parent_node.full_path,
@@ -113,11 +112,12 @@ class ExpandableTree:
                     list_node_expanded_as_parent = (
                             new_parent[primary_keys[0]] == parent_node.parent_node.parent_node.node_id)
 
+                node_id = "1" if has_parents else ""
                 parent_list_node = Node(
                     f'{parent_path}/{parent_list_number}',
                     parent_node,
                     node_type,
-                    (node_id := "123123123123123" if has_parents else ""),
+                    node_id,
                     None,
                     list_node_expanded_as_parent
                 )
@@ -252,7 +252,7 @@ class ExpandableTree:
         self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, background='#cccccc')
         self.tree.tag_configure(NodeTypes.PARENT.name, background='#f5c84c')
         self.tree.tag_configure(NodeTags.NO_VALUE, foreground='grey')
-        self.tree.tag_configure(NodeTags.VISITED, foreground='grey')
+        self.tree.tag_configure(NodeTags.VISITED, foreground='yellow')
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
