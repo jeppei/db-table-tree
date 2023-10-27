@@ -112,9 +112,9 @@ class ExpandableTree:
                         id_string = f'({primary_keys[0]}={new_parent[primary_keys[0]]})'
 
                     list_node_expanded_as_parent = (
-                            new_parent[primary_keys[0]] == parent_node.parent_node.parent_node.node_id)
+                            str(new_parent[primary_keys[0]]) == str(parent_node.parent_node.parent_node.node_id))
 
-                node_id = "1" if has_parents else ""
+                node_id = new_parent[primary_keys[0]] if has_parents else ""
                 parent_list_node = Node(
                     f'{parent_path}/{parent_list_number}',
                     parent_node,
