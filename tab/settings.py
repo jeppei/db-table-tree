@@ -4,8 +4,11 @@ from tkinter import ttk
 from theme.themes import all_themes
 
 class Settings:
-    def __init__(self, parent):
+    def __init__(self, parent, root_window, table_explorer):
         self.parent = parent
+        self.root_window = root_window
+        self.table_explorer = table_explorer  # only to be able to change the theme
+
         self.settings_file = "settings.json"  # JSON file to store settings
         self.connections = []  # List of database connection configurations
         self.selected_connection = None  # Currently selected database connection
@@ -17,6 +20,7 @@ class Settings:
         self.user_var = tkb.StringVar()
         self.password_var = tkb.StringVar()
         self.show_parents_var = tkb.BooleanVar()
+        self.theme_combobox = None
 
         self.create_settings_page()
 
@@ -90,8 +94,8 @@ class Settings:
         selected_theme_name = self.theme_var.get()
         selected_theme = next((theme for theme in all_themes if theme.name == selected_theme_name), None)
         if selected_theme:
-            #tkb.(selected_theme.name)
-            print(selected_theme)
+            self.root_window.style.theme_use(selected_theme.name)
+            self.table_explorer.change_theme(selected_theme)
 
     def save_settings(self):
         settings = {

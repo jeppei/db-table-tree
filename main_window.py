@@ -15,18 +15,18 @@ class MainWindow:
         self.my_db_navigator = DBNavigator(DB(self.env))
         self.theme = Themes.superhero
 
-        self.root = create_window(self.theme)
+        self.root_window = create_window(self.theme)
 
-        tab1, tab2, tab3 = create_notebook(self.root)
+        tab1, tab2, tab3 = create_notebook(self.root_window)
         self.table_explorer = tab1
         self.database_search = tab2
         self.settings = tab3
 
         self.table_explorer = TableExplorer(tab1, self.theme, self.my_db_navigator, table, row_id)
         self.database_search = DatabaseSearch(tab2, self.my_db_navigator)
-        self.settings = Settings(tab3)
+        self.settings = Settings(tab3, self.root_window, self.table_explorer)
 
-        self.root.mainloop()
+        self.root_window.mainloop()
 
 
 def create_window(theme):

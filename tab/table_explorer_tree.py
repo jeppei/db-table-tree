@@ -16,12 +16,7 @@ class TableExplorerTree:
         self.tree = tkb.Treeview(root, height=20, show="tree")
         self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
 
-        self.tree.tag_configure(NodeTypes.LEAF.name,                   foreground=theme.color.fg)
-        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=theme.color.info)
-        self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=theme.color.primary)
-        self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=theme.color.primary)
-        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=theme.color.secondary)
-        self.tree.tag_configure(NodeTags.VISITED,                      foreground=theme.color.success)
+        self.change_theme(theme)
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
@@ -326,3 +321,11 @@ class TableExplorerTree:
     def toggle_node(self, _):
         parent_path = self.tree.selection()[0]
         self.fetch_children(parent_path)
+
+    def change_theme(self, theme):
+        self.tree.tag_configure(NodeTypes.LEAF.name,                   foreground=theme.color.fg)
+        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=theme.color.info)
+        self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=theme.color.primary)
+        self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=theme.color.primary)
+        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=theme.color.secondary)
+        self.tree.tag_configure(NodeTags.VISITED,                      foreground=theme.color.success)

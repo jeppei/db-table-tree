@@ -20,6 +20,11 @@ class TableExplorer:
             self.db_navigator
         )
 
+    def change_theme(self, new_theme):
+        self.theme = new_theme
+        self.table_explorer_tree.change_theme(new_theme)
+
+
     def create_combo_box_for_tables(self, parent, table):
         all_table_names = self.db_navigator.get_all_table_names()
         combo_box = tkb.Combobox(parent, values=all_table_names)
