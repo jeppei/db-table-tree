@@ -13,20 +13,20 @@ class DatabaseSearch:
         self.search_entry = tkb.Entry(self.root)
         self.search_entry.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
-        self.search_type = ttk.Combobox(self.root, values=["table", "column"])
+        self.search_type = ttk.Combobox(self.root, width=10, values=["table", "column"])
         self.search_type.set("table")
         self.search_type.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
-        self.search_button = tkb.Button(self.root, text="Search", command=self.search_tables)
+        self.search_button = tkb.Button(self.root, text="Search", width=7, command=self.search_tables)
         self.search_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         # Create a Treeview widget to display results with two columns
-        self.result_tree = ttk.Treeview(self.root, columns=("Name", "Type"), selectmode="browse")
-        self.result_tree.heading("Name", text="Name")
-        self.result_tree.heading("Type", text="Type")
+        self.result_tree = ttk.Treeview(self.root, columns=("Column1", "Column2"), selectmode="browse")
+        self.result_tree.heading("Column1", text="")
+        self.result_tree.heading("Column2", text="")
         self.result_tree.column("#0", width=0, stretch=False)  # Hide the first column
-        self.result_tree.column("Name", width=200, anchor="w")
-        self.result_tree.column("Type", width=200)
+        self.result_tree.column("Column1", width=200)
+        self.result_tree.column("Column2", width=200)
         self.result_tree.grid(row=1, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
         # Configure row and column weights for expansion
@@ -43,12 +43,12 @@ class DatabaseSearch:
 
         # Call your database method to get matching table names or columns
         if search_type == "table":
-            self.result_tree.heading("Name", text="Name")
-            self.result_tree.heading("Type", text="Count")
+            self.result_tree.heading("Column1", text="Name")
+            self.result_tree.heading("Column2", text="Count")
             column1, column2 = self.db_navigator.find_table(search_string)
         elif search_type == "column":
-            self.result_tree.heading("Name", text="Table")
-            self.result_tree.heading("Type", text="Column")
+            self.result_tree.heading("Column1", text="Table")
+            self.result_tree.heading("Column2", text="Column")
             column1, column2 = self.db_navigator.find_column(search_string)
         else:
             column1 = []

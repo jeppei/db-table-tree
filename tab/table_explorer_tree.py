@@ -5,7 +5,7 @@ from node_tags import NodeTags
 from node_types import NodeTypes
 
 
-class DatabaseExplorerTree:
+class TableExplorerTree:
 
     def __init__(self, root, theme, table, row_id, db_navigator):
 
@@ -27,6 +27,9 @@ class DatabaseExplorerTree:
         style_name = "Custom.Treeview"
         tkb.Style().configure(style=style_name, indent=30)
         self.tree.config(style=style_name)
+
+        if table is None and row_id is None:
+            return
 
         root_node_path = f"{table}(id={row_id})"
         parent_root_node = Node(
