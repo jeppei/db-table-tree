@@ -1,61 +1,62 @@
 import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
-from database.db import DB
-from database.db_navigator import DBNavigator
-from node.node_tags import NodeTags
-from node.node_types import NodeTypes
 from node.node import Node
-from theme.themes import Themes
+from node_tags import NodeTags
+from node_types import NodeTypes
 
 
-class ExpandableTree:
-    def __init__(self, table, row_id, env):
-        self.table = table
-        self.row_id = row_id
-        self.env = env
+class Tree:
+
+    def __init__(self, root, theme, table, row_id, db_navigator):
 
         self.nodes = {}
-        self.my_db_navigator = DBNavigator(DB(self.env))
-
-        self.theme = Themes.superhero
+        self.my_db_navigator = db_navigator
         self.show_already_visited_parents = False
 
-        self.root = self.create_window()
-        self.combo_box = self.create_combo_box_for_tables()
-        self.text_box = self.create_text_input_for_row_id()
-        self.button = self.create_go_button()
-        self.tree = None
+        self.tree = tkb.Treeview(root, height=20, show="tree")
+        self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
 
-        self.root.mainloop()
+        self.tree.tag_configure(NodeTypes.LEAF.name,                   foreground=theme.color.fg)
+        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=theme.color.info)
+        self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=theme.color.primary)
+        self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=theme.color.primary)
+        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=theme.color.secondary)
+        self.tree.tag_configure(NodeTags.VISITED,                      foreground=theme.color.success)
 
-    def create_window(self):
-        root = tkb.Window(themename=self.theme.name)
-        root.geometry("1000x1000")
-        root.title("Expandable Tree")
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_columnconfigure(0, weight=1)
-        root.grid_rowconfigure(0, weight=0)
-        return root
+        self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
+        style_name = "Custom.Treeview"
+        tkb.Style().configure(style=style_name, indent=30)
+        self.tree.config(style=style_name)
 
-    def create_combo_box_for_tables(self):
-        all_table_names = self.my_db_navigator.get_all_table_names()
-        combo_box = tkb.Combobox(self.root, values=all_table_names)
-        combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
-        if self.table in combo_box['values']:
-            combo_box.set(self.table)
-        return combo_box
-
-    def create_text_input_for_row_id(self):
-        text_box = tkb.Text(self.root, height=1, width=25, wrap="none")
-        text_box.insert("1.0", self.row_id)
-        text_box.grid(row=0, column=1, padx=0, pady=0, sticky="ew")  # Use grid layout manager
-        text_box.bind("<Return>", self.on_enter_pressed)
-        return text_box
-
-    def create_go_button(self):
-        button = tkb.Button(self.root, text="GO!", command=self.button_click)
-        button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
-        return button
+        root_node_path = f"{table}(id={row_id})"
+        parent_root_node = Node(
+            "",
+            None,
+            NodeTypes.DUMMY,
+            None,
+            "",
+            False,
+        )
+        root_node = Node(
+            root_node_path,
+            parent_root_node,
+            NodeTypes.CHILDREN_WITH_CHILDREN,
+            row_id,
+            table,
+            False,
+        )
+        self.add_to_tree(root_node, f'{table} (id={row_id})')
+        self.fetch_children(root_node_path)
+        self.tree.item(root_node_path, open=True)
+        dumb_node = Node(
+            f'{root_node_path}/(double-click)',
+            root_node,
+            NodeTypes.DUMMY,
+            None,
+            "dummy",
+            False
+        )
+        self.add_to_tree(dumb_node, '')
 
     def add_to_tree(self, node, node_text):
         if self.tree.exists(node.full_path):
@@ -66,8 +67,8 @@ class ExpandableTree:
         tags = (node.node_type.name, )
 
         if (
-            (not node.exist and not node.parent_node.exist) or
-            (not node.exist and node.node_type == NodeTypes.PARENT_LIST_NODE)
+                (not node.exist and not node.parent_node.exist) or
+                (not node.exist and node.node_type == NodeTypes.PARENT_LIST_NODE)
         ):
             tags = (NodeTags.NO_VALUE, )
         elif node.visited:
@@ -88,9 +89,9 @@ class ExpandableTree:
         print(f'\n{line}\n{message}\n{line}\n')
         parent_node = self.nodes[parent_path]
         if (
-            parent_node.node_type == NodeTypes.LEAF or
-            parent_node.node_type == NodeTypes.DUMMY or
-            parent_node.node_type == NodeTypes.PARENT_LIST_NODE
+                parent_node.node_type == NodeTypes.LEAF or
+                parent_node.node_type == NodeTypes.DUMMY or
+                parent_node.node_type == NodeTypes.PARENT_LIST_NODE
         ):
             return
 
@@ -139,16 +140,16 @@ class ExpandableTree:
             )
 
     def add_parent_row_to_tree(
-        self,
-        new_parent,
-        parent_node,
-        parent_path,
-        has_parents,
-        primary_keys,
-        new_parent_children_with_children,
-        new_parent_parents,
-        new_parent_columns,
-        parent_list_number
+            self,
+            new_parent,
+            parent_node,
+            parent_path,
+            has_parents,
+            primary_keys,
+            new_parent_children_with_children,
+            new_parent_parents,
+            new_parent_columns,
+            parent_list_number
     ):
         id_string = ""
         node_type = NodeTypes.PARENT_LIST_NODE
@@ -187,13 +188,13 @@ class ExpandableTree:
         return parent_list_number + 1
 
     def add_children_to_tree(
-        self,
-        relations_from_others,
-        parent_node,
-        column_keys,
-        row,
-        relations_to_others,
-        explored_column
+            self,
+            relations_from_others,
+            parent_node,
+            column_keys,
+            row,
+            relations_to_others,
+            explored_column
     ):
         for child_table_name in relations_from_others.keys():
             child_column_key = relations_from_others[child_table_name]
@@ -222,11 +223,11 @@ class ExpandableTree:
                 self.add_leaf_to_tree(child_column_key, child_column_value, parent_node)
 
     def add_child_parent_to_tree(
-        self,
-        child_table_name,
-        child_column_key,
-        parent_node,
-        explored_column
+            self,
+            child_table_name,
+            child_column_key,
+            parent_node,
+            explored_column
     ):
         child_node_type = NodeTypes.PARENT
         visited = child_column_key == explored_column
@@ -319,64 +320,6 @@ class ExpandableTree:
         )
         self.add_to_tree(child_node, node_text)
 
-    def create_new_table_tree(self, table, row_id):
-
-        self.tree = tkb.Treeview(self.root, height=20, show="tree")
-        self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
-        self.root.grid_rowconfigure(1, weight=1)
-
-        self.tree.tag_configure(NodeTypes.LEAF.name,                   foreground=self.theme.color.fg)
-        self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=self.theme.color.info)
-        self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=self.theme.color.primary)
-        self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=self.theme.color.primary)
-        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=self.theme.color.secondary)
-        self.tree.tag_configure(NodeTags.VISITED,                      foreground=self.theme.color.success)
-
-        self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
-        style_name = "Custom.Treeview"
-        tkb.Style().configure(style=style_name, indent=30)
-        self.tree.config(style=style_name)
-
-        root_node_path = f"{table}(id={row_id})"
-        parent_root_node = Node(
-            "",
-            None,
-            NodeTypes.DUMMY,
-            None,
-            "",
-            False,
-        )
-        root_node = Node(
-            root_node_path,
-            parent_root_node,
-            NodeTypes.CHILDREN_WITH_CHILDREN,
-            row_id,
-            table,
-            False,
-        )
-        self.add_to_tree(root_node, f'{table} (id={row_id})')
-        self.fetch_children(root_node_path)
-        self.tree.item(root_node_path, open=True)
-        dumb_node = Node(
-            f'{root_node_path}/(double-click)',
-            root_node,
-            NodeTypes.DUMMY,
-            None,
-            "dummy",
-            False
-        )
-        self.add_to_tree(dumb_node, '')
-
     def toggle_node(self, _):
         parent_path = self.tree.selection()[0]
         self.fetch_children(parent_path)
-
-    def button_click(self):
-        row_id = self.text_box.get("1.0", "end-1c")
-        table = self.combo_box.get()
-        self.create_new_table_tree(table, row_id)
-
-    def on_enter_pressed(self, _):
-        if self.text_box == self.root.focus_get():
-            self.button_click()
-            return 'break'  # Prevents the newline from being inserted

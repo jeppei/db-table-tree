@@ -1,5 +1,5 @@
 import argparse
-from expandable_tree import ExpandableTree
+from main_window import MainWindow
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser()
@@ -8,7 +8,7 @@ if __name__ == "__main__":
     cli.add_argument("--id",    nargs="?", type=int,  default=1, help="")
     args = cli.parse_args()
 
-    expandable_tree = ExpandableTree(
+    main_window = MainWindow(
         args.table,
         args.id,
         args.env
