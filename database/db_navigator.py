@@ -135,4 +135,14 @@ class DBNavigator:
 
         return table_names
 
+    def get_row_count_of_table(self, table_name, column_key, column_value):
+        query = f"""
+                SELECT count(*)
+                FROM {table_name}
+                WHERE {column_key} = {column_value}
+            """
 
+        with self._db:
+            resulting_rows, _ = self._db.execute_query(query)
+
+        return resulting_rows[0][0]

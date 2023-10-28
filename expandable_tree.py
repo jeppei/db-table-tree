@@ -171,6 +171,12 @@ class ExpandableTree:
         for child_table_name in relations_from_others.keys():
             child_column_key = relations_from_others[child_table_name]
 
+            parent_rows_count = self.my_db_navigator.get_row_count_of_table(
+                child_table_name,
+                child_column_key,
+                parent_node.node_id
+            )
+
             child_node_type = NodeTypes.PARENT
             visited = child_column_key == explored_column
 
@@ -185,7 +191,7 @@ class ExpandableTree:
                 child_column_key,
                 parent_node.node_id,
             )
-            self.add_to_tree(child_node, f'[{child_table_name}]')
+            self.add_to_tree(child_node, f'[{child_table_name}] ({parent_rows_count})')
 
             if child_node_type == NodeTypes.PARENT:
                 dummy_node = Node(

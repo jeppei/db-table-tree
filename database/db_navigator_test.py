@@ -30,6 +30,11 @@ def test_get_primary_key(db_navigator):
     print(primary_key1)
 
 
+def test_get_row_count_of_table(db_navigator):
+    count = db_navigator.get_row_count_of_table("users")
+    print(count)
+
+
 def pretty(d, indent=0):
     for key, value in d.items():
         print('\t' * indent + '"' + str(key) + '":')
@@ -46,3 +51,4 @@ if __name__ == "__main__":
     test_get_parents_1(my_db_navigator)
     test_get_parents_0(my_db_navigator)
     test_get_children(my_db_navigator)
+    test_get_row_count_of_table(my_db_navigator)
