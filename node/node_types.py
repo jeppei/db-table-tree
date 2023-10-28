@@ -1,4 +1,4 @@
-from node_type import NodeType
+from node.node_type import NodeType
 
 
 class NodeTypes:

@@ -1,4 +1,4 @@
-from theme import Theme
+from theme.theme import Theme
 
 
 class Themes:

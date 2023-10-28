@@ -1,4 +1,4 @@
-from db import DB
+from database.db import DB
 
 
 def has_no_value(variable):

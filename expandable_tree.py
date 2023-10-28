@@ -1,11 +1,11 @@
 import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
-from db import DB
-from db_navigator import DBNavigator
-from node_tags import NodeTags
-from node_types import NodeTypes
-from node import Node
-from themes import Themes
+from database.db import DB
+from database.db_navigator import DBNavigator
+from node.node_tags import NodeTags
+from node.node_types import NodeTypes
+from node.node import Node
+from theme.themes import Themes
 
 
 class ExpandableTree:

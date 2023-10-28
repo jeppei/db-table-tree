@@ -1,4 +1,4 @@
-from color import Color
+from theme.color import Color
 
 
 class Theme:
