@@ -3,7 +3,9 @@ import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.image
 from database.db import DB
 from database.db_navigator import DBNavigator
 from theme.themes import Themes
-from tree import Tree
+from database_explorer_tree import DatabaseExplorerTree
+
+from tab.database_search import DatabaseSearch
 
 
 class MainWindow:
@@ -25,6 +27,8 @@ class MainWindow:
         self.text_box = self.create_text_input_for_row_id(tab1, row_id)
         self.button = self.create_go_button(tab1)
         self.tree = None
+
+        self.database_search = DatabaseSearch(tab2, self.my_db_navigator)
 
         self.root.mainloop()
 
@@ -81,7 +85,7 @@ class MainWindow:
     def button_click(self):
         row_id = self.text_box.get("1.0", "end-1c")
         table = self.combo_box.get()
-        self.tree = Tree(self.table_explorer, self.theme, table, row_id, self.my_db_navigator)
+        self.table_explorer = DatabaseExplorerTree(self.table_explorer, self.theme, table, row_id, self.my_db_navigator)
 
     def on_enter_pressed(self, _):
         if self.text_box == self.root.focus_get():

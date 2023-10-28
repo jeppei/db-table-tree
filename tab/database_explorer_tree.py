@@ -5,7 +5,7 @@ from node_tags import NodeTags
 from node_types import NodeTypes
 
 
-class Tree:
+class DatabaseExplorerTree:
 
     def __init__(self, root, theme, table, row_id, db_navigator):
 

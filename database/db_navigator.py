@@ -146,3 +146,43 @@ class DBNavigator:
             resulting_rows, _ = self._db.execute_query(query)
 
         return resulting_rows[0][0]
+
+    # database search
+    def find_table(self, table):
+        query = f"""
+            SELECT TABLE_NAME, TABLE_ROWS 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_NAME LIKE '%{table}%'
+            """
+
+        with self._db:
+            resulting_rows, _ = self._db.execute_query(query)
+
+        table_names = []
+        row_counts = []
+        for row in resulting_rows:
+            table_names.append(row[0])
+            row_counts.append(row[1])
+
+        return table_names, row_counts
+
+    def find_column(self, column):
+        query = f"""
+            SELECT      
+               TABLE_NAME AS  'TableName',
+               COLUMN_NAME AS 'ColumnName'
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE COLUMN_NAME LIKE '%{column}%' 
+            ORDER BY TableName, ColumnName;
+        """
+
+        with self._db:
+            resulting_rows, _ = self._db.execute_query(query)
+
+        table_names = []
+        column_names = []
+        for row in resulting_rows:
+            table_names.append(row[0])
+            column_names.append(row[1])
+
+        return table_names, column_names
