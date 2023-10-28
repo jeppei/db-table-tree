@@ -7,10 +7,10 @@ from theme.themes import all_themes
 
 class SettingsTab:
 
-    def __init__(self, parent, root_window, table_explorer):
+    def __init__(self, parent, root_window):
         self.parent = parent
         self.root_window = root_window
-        self.table_explorer = table_explorer  # only to be able to change the theme
+        self.table_explorer = None  # only to be able to change the theme
 
         self.connection_combo = None
         self.theme_combobox = None
@@ -39,27 +39,28 @@ class SettingsTab:
         # Entry widgets associated with StringVar variables
         host_label = tkb.Label(database_settings_frame, text="Host:")
         host_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
-        host_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.host)
-        host_entry.grid(row=1, column=1, padx=10, pady=10, sticky="w")
+        host_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.host, width=50)
+        host_entry.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+        host_entry.grid_columnconfigure(1, weight=1)
 
         port_label = tkb.Label(database_settings_frame, text="Port:")
         port_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
-        port_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.port)
+        port_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.port, width=50)
         port_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
         database_label = tkb.Label(database_settings_frame, text="Database:")
         database_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
-        database_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.database)
+        database_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.database, width=50)
         database_entry.grid(row=3, column=1, padx=10, pady=10, sticky="w")
 
         user_label = tkb.Label(database_settings_frame, text="User:")
         user_label.grid(row=4, column=0, padx=10, pady=10, sticky="e")
-        user_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.user)
+        user_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.user, width=50)
         user_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
         password_label = tkb.Label(database_settings_frame, text="Password:")
         password_label.grid(row=5, column=0, padx=10, pady=10, sticky="e")
-        password_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.password, show="*")
+        password_entry = tkb.Entry(database_settings_frame, textvariable=connection_setting.password, width=50, show="*")
         password_entry.grid(row=5, column=1, padx=10, pady=10, sticky="w")
 
         # Other settings
@@ -89,7 +90,11 @@ class SettingsTab:
         selected_theme = next((theme for theme in all_themes if theme.name == selected_theme_name), None)
         if selected_theme:
             self.root_window.style.theme_use(selected_theme.name)
-            self.table_explorer.change_theme(selected_theme)
+            if self.table_explorer is not None:
+                self.table_explorer.change_theme(selected_theme)
+
+    def set_table_explorer(self, table_explorer):
+        self.table_explorer = table_explorer
 
     def save_settings(self):
         self.settings.save_settings()

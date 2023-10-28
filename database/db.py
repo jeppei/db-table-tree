@@ -1,17 +1,39 @@
 import mysql.connector  # pip install mysql-connector-python
+from database_connection_settings import DatabaseConnectionSettings
 import os
+
+
+def read_setting(param):
+    if param[0] == "$":
+        return os.environ.get(param[1:])
+    else:
+        return param
 
 
 class DB:
 
     def __enter__(self):
-        print(f'Connecting to the {self._env} database on {self._host}/{self._database}:{self._port} with user {self._user}')
+
+        self.name = read_setting(self.database_connection_settings.name.get())
+        self.host = read_setting(self.database_connection_settings.host.get())
+        self.port = read_setting(self.database_connection_settings.port.get())
+        self.user = read_setting(self.database_connection_settings.user.get())
+        self.password = read_setting(self.database_connection_settings.password.get())
+        self.database = read_setting(self.database_connection_settings.database.get())
+
+        print(
+            f'Connecting to the {self.name} '
+            f'database on {self.host}/'
+            f'{self.database}:'
+            f'{self.port} '
+            f'with user {self.user}'
+        )
         self._connection = mysql.connector.connect(
-            host=self._host,
-            port=self._port,
-            user=self._user,
-            password=self._password,
-            database=self._database
+            host=self.host,
+            port=self.port,
+            user=self.user,
+            password=self.password,
+            database=self.database
         )
         self._my_cursor = self._connection.cursor()
         return self
@@ -20,34 +42,8 @@ class DB:
         self._connection.close()
         self._my_cursor = None
 
-    def __init__(self, env):
-
-        self._my_cursor = None
-        self._env = env
-
-        if self._env == "dev" or env == "local":
-            self._host = os.environ['LOCAL_DATABASE_HOST']
-            self._port = os.environ['LOCAL_DATABASE_PORT']
-            self._database = os.environ['LOCAL_DATABASE_NAME']
-            self._user = os.environ['LOCAL_DATABASE_USER']
-            self._password = os.environ['LOCAL_DATABASE_PASSWORD']
-
-        elif self._env == "test":
-            self._host = os.environ['TEST_DATABASE_HOST']
-            self._port = os.environ['TEST_DATABASE_PORT']
-            self._database = os.environ['TEST_DATABASE_NAME']
-            self._user = os.environ['TEST_DATABASE_USER']
-            self._password = os.environ['TEST_DATABASE_PASSWORD']
-
-        elif self._env == "prod":
-            self._host = os.environ['PROD_DATABASE_HOST']
-            self._port = os.environ['PROD_DATABASE_PORT']
-            self._database = os.environ['PROD_DATABASE_NAME']
-            self._user = os.environ['PROD_DATABASE_USER']
-            self._password = os.environ['PROD_DATABASE_PASSWORD']
-
-        else:
-            raise ValueError("Invalid environment.")
+    def __init__(self, database_connection_settings: DatabaseConnectionSettings):
+        self.database_connection_settings = database_connection_settings
 
     def execute_query(self, query):
         if self._my_cursor is None:

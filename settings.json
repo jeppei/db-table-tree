@@ -15,9 +15,17 @@
             "database": "test_db_2",
             "user": "test_user_2",
             "password": "test_password_2"
+        },
+        {
+            "name": "local",
+            "host": "$LOCAL_DATABASE_HOST",
+            "port": "$LOCAL_DATABASE_PORT",
+            "database": "$LOCAL_DATABASE_NAME",
+            "user": "$LOCAL_DATABASE_USER",
+            "password": "$LOCAL_DATABASE_PASSWORD"
         }
     ],
-    "selected_connection_setting_name": "production_1",
+    "selected_connection_setting_name": "local",
     "show_parents": "1",
-    "theme": "superhero"
+    "theme": "cyborg"
 }

@@ -5,10 +5,10 @@ from table_explorer_tree import TableExplorerTree
 
 class TableExplorer:
 
-    def __init__(self, parent_tab, theme, db_navigator, table, row_id):
+    def __init__(self, parent_tab, settings, table, row_id):
         self.parent_tab = parent_tab
-        self.theme = theme
-        self.db_navigator = db_navigator
+        self.theme = settings.get_theme()
+        self.db_navigator = settings.my_db_navigator
         self.combo_box = self.create_combo_box_for_tables(parent_tab, table)
         self.text_box = self.create_text_input_for_row_id(parent_tab, row_id)
         self.button = self.create_go_button(parent_tab)

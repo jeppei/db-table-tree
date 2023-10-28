@@ -2,6 +2,9 @@ import ttkbootstrap as tkb
 import json
 
 from database_connection_settings import DatabaseConnectionSettings
+from db import DB
+from db_navigator import DBNavigator
+from themes import all_themes
 
 
 class Settings:
@@ -67,6 +70,8 @@ class Settings:
             print("Could not find settings file!")
             pass  # File not found, use default values
 
+        self.my_db_navigator = DBNavigator(DB(self.selected_connection_setting))
+
     def save_settings(self):
         print(f"Saving settings")        # Create a dictionary to store the settings you want to save
         settings_to_save = {
@@ -96,6 +101,9 @@ class Settings:
         for connection_setting in self.connections_settings:
             if connection_setting.name.get() == name:
                 return connection_setting
+
+    def get_theme(self):
+        return next((theme for theme in all_themes if theme.name == self.theme.get()), None)
 
 
 # Example JSON settings file:
