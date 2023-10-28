@@ -24,6 +24,7 @@ class ExpandableTree:
         self.combo_box = self.create_combo_box_for_tables()
         self.text_box = self.create_text_input_for_row_id()
         self.button = self.create_go_button()
+        self.tree = None
 
         self.root.mainloop()
 
@@ -86,64 +87,18 @@ class ExpandableTree:
         line = '#' * len(message)
         print(f'\n{line}\n{message}\n{line}\n')
         parent_node = self.nodes[parent_path]
-        if parent_node.node_type == NodeTypes.LEAF:
-            return
-        if parent_node.node_type == NodeTypes.DUMMY:
-            return
-        if parent_node.node_type == NodeTypes.PARENT_LIST_NODE:
+        if (
+            parent_node.node_type == NodeTypes.LEAF or
+            parent_node.node_type == NodeTypes.DUMMY or
+            parent_node.node_type == NodeTypes.PARENT_LIST_NODE
+        ):
             return
 
         if self.tree.exists(f'{parent_path}/(double-click)'):
             self.tree.delete(f'{parent_path}/(double-click)')
 
         if parent_node.node_type == NodeTypes.PARENT:
-            primary_keys = self.my_db_navigator.get_primary_key_of_table(parent_node.table_name)
-            new_parent_columns, new_parents, has_parents = self.my_db_navigator.get_parents(
-                parent_node.table_name,
-                parent_node.parent_column_name,
-                parent_node.parent_column_name_value
-            )
-            new_parent_children_with_children = self.my_db_navigator.get_children_with_children(parent_node.table_name)
-            new_parent_parents = self.my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
-            parent_list_number = 1
-            for new_parent in new_parents:
-
-                id_string = ""
-                node_type = NodeTypes.PARENT_LIST_NODE
-                list_node_expanded_as_parent = False
-                if len(primary_keys) == 1:
-
-                    if new_parent[primary_keys[0]] != "":
-                        id_string = f'({primary_keys[0]}={new_parent[primary_keys[0]]})'
-
-                    list_node_expanded_as_parent = (
-                            str(new_parent[primary_keys[0]]) == str(parent_node.parent_node.parent_node.node_id))
-
-                node_id = new_parent[primary_keys[0]] if has_parents else ""
-                parent_list_node = Node(
-                    f'{parent_path}/{parent_list_number}',
-                    parent_node,
-                    node_type,
-                    node_id,
-                    None,
-                    list_node_expanded_as_parent
-                )
-
-                self.add_to_tree(parent_list_node, f'{parent_node.table_name} {id_string}')
-
-                if list_node_expanded_as_parent and not self.show_already_visited_parents:
-                    continue
-
-                self.add_children_to_tree(
-                    new_parent_parents,
-                    parent_list_node,
-                    new_parent_columns,
-                    new_parent,
-                    new_parent_children_with_children,
-                    parent_node.parent_column_name
-                )
-
-                parent_list_number = parent_list_number + 1
+            self.add_parent_rows_to_tree(parent_node, parent_path)
 
         if parent_node.node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
             column_keys, column_values = self.my_db_navigator.get_children(parent_node.table_name, parent_node.node_id)
@@ -159,6 +114,78 @@ class ExpandableTree:
                 parent_node.parent_column_name
             )
 
+    def add_parent_rows_to_tree(self, parent_node, parent_path):
+        primary_keys = self.my_db_navigator.get_primary_key_of_table(parent_node.table_name)
+        new_parent_columns, new_parents, has_parents = self.my_db_navigator.get_parents(
+            parent_node.table_name,
+            parent_node.parent_column_name,
+            parent_node.parent_column_name_value
+        )
+        new_parent_children_with_children = self.my_db_navigator.get_children_with_children(parent_node.table_name)
+        new_parent_parents = self.my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
+        parent_list_number = 1
+        for new_parent in new_parents:
+
+            parent_list_number = self.add_parent_row_to_tree(
+                new_parent,
+                parent_node,
+                parent_path,
+                has_parents,
+                primary_keys,
+                new_parent_children_with_children,
+                new_parent_parents,
+                new_parent_columns,
+                parent_list_number
+            )
+
+    def add_parent_row_to_tree(
+        self,
+        new_parent,
+        parent_node,
+        parent_path,
+        has_parents,
+        primary_keys,
+        new_parent_children_with_children,
+        new_parent_parents,
+        new_parent_columns,
+        parent_list_number
+    ):
+        id_string = ""
+        node_type = NodeTypes.PARENT_LIST_NODE
+        list_node_expanded_as_parent = False
+        if len(primary_keys) == 1:
+
+            if new_parent[primary_keys[0]] != "":
+                id_string = f'({primary_keys[0]}={new_parent[primary_keys[0]]})'
+
+            list_node_expanded_as_parent = (
+                    str(new_parent[primary_keys[0]]) == str(parent_node.parent_node.parent_node.node_id))
+
+        node_id = new_parent[primary_keys[0]] if has_parents else ""
+        parent_list_node = Node(
+            f'{parent_path}/{parent_list_number}',
+            parent_node,
+            node_type,
+            node_id,
+            None,
+            list_node_expanded_as_parent
+        )
+
+        self.add_to_tree(parent_list_node, f'{parent_node.table_name} {id_string}')
+
+        if list_node_expanded_as_parent and not self.show_already_visited_parents:
+            return
+
+        self.add_children_to_tree(
+            new_parent_parents,
+            parent_list_node,
+            new_parent_columns,
+            new_parent,
+            new_parent_children_with_children,
+            parent_node.parent_column_name
+        )
+        return parent_list_number + 1
+
     def add_children_to_tree(
         self,
         relations_from_others,
@@ -170,39 +197,12 @@ class ExpandableTree:
     ):
         for child_table_name in relations_from_others.keys():
             child_column_key = relations_from_others[child_table_name]
-
-            parent_rows_count = self.my_db_navigator.get_row_count_of_table(
+            self.add_child_parent_to_tree(
                 child_table_name,
                 child_column_key,
-                parent_node.node_id
-            )
-
-            child_node_type = NodeTypes.PARENT
-            visited = child_column_key == explored_column
-
-            child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
-            child_node = Node(
-                child_path,
                 parent_node,
-                child_node_type,
-                parent_node.node_id,
-                child_table_name,
-                visited,
-                child_column_key,
-                parent_node.node_id,
+                explored_column
             )
-            self.add_to_tree(child_node, f'[{child_table_name}] ({parent_rows_count})')
-
-            if child_node_type == NodeTypes.PARENT:
-                dummy_node = Node(
-                    f'{child_path}/(double-click)',
-                    child_node,
-                    NodeTypes.DUMMY,
-                    None,
-                    "dummy",
-                    False,
-                )
-                self.add_to_tree(dummy_node, f'(double click parent to fetch)')
 
         for child_column_key in column_keys:
 
@@ -210,52 +210,111 @@ class ExpandableTree:
 
             if child_column_key in relations_to_others:
                 child_table_name = relations_to_others[child_column_key]
-                child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}={child_column_value})'
-
-                node_text = f'{child_column_key}={child_column_value}'
-                child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN
-                if child_column_value == "":
-                    node_text = f'{child_column_key}'
-
-                visited = child_column_key == explored_column
-
-                child_node = Node(
-                    child_path,
-                    parent_node,
-                    child_node_type,
-                    child_column_value,
+                self.add_children_with_children_to_tree(
+                    child_column_key,
                     child_table_name,
-                    visited,
+                    parent_node,
+                    child_column_value,
+                    explored_column
                 )
-                self.add_to_tree(child_node, node_text)
-
-                hide_child_content = visited and not self.show_already_visited_parents
-
-                if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN and not hide_child_content:
-                    dummy_node = Node(
-                        f'{child_path}/(double-click)',
-                        child_node,
-                        NodeTypes.DUMMY,
-                        visited,
-                        None,
-                        "dummy"
-                    )
-                    self.add_to_tree(dummy_node, f'(double click parent to fetch)')
 
             else:
-                node_text = f'{child_column_key}={child_column_value}'
-                child_node_type = NodeTypes.LEAF
-                if child_column_value == "":
-                    node_text = f'{child_column_key}'
-                child_node = Node(
-                    f'{parent_node.full_path}/({child_column_key}={child_column_value})',
-                    parent_node,
-                    child_node_type,
-                    child_column_value,
-                    child_column_key,
-                    False,
-                )
-                self.add_to_tree(child_node, node_text)
+                self.add_leaf_to_tree(child_column_key, child_column_value, parent_node)
+
+    def add_child_parent_to_tree(
+        self,
+        child_table_name,
+        child_column_key,
+        parent_node,
+        explored_column
+    ):
+        parent_rows_count = self.my_db_navigator.get_row_count_of_table(
+            child_table_name,
+            child_column_key,
+            parent_node.node_id
+        )
+
+        child_node_type = NodeTypes.PARENT
+        visited = child_column_key == explored_column
+
+        child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
+        child_node = Node(
+            child_path,
+            parent_node,
+            child_node_type,
+            parent_node.node_id,
+            child_table_name,
+            visited,
+            child_column_key,
+            parent_node.node_id,
+        )
+        self.add_to_tree(child_node, f'[{child_table_name}] ({parent_rows_count})')
+
+        if child_node_type == NodeTypes.PARENT:
+            dummy_node = Node(
+                f'{child_path}/(double-click)',
+                child_node,
+                NodeTypes.DUMMY,
+                None,
+                "dummy",
+                False,
+            )
+            self.add_to_tree(dummy_node, f'(double click parent to fetch)')
+
+    def add_children_with_children_to_tree(
+            self,
+            child_column_key,
+            child_table_name,
+            parent_node,
+            child_column_value,
+            explored_column
+    ):
+        child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}={child_column_value})'
+
+        node_text = f'{child_column_key}={child_column_value}'
+        child_node_type = NodeTypes.CHILDREN_WITH_CHILDREN
+        if child_column_value == "":
+            node_text = f'{child_column_key}'
+
+        visited = child_column_key == explored_column
+
+        child_node = Node(
+            child_path,
+            parent_node,
+            child_node_type,
+            child_column_value,
+            child_table_name,
+            visited,
+        )
+        self.add_to_tree(child_node, node_text)
+
+        hide_child_content = visited and not self.show_already_visited_parents
+
+        if child_node_type == NodeTypes.CHILDREN_WITH_CHILDREN and not hide_child_content:
+            dummy_node = Node(
+                f'{child_path}/(double-click)',
+                child_node,
+                NodeTypes.DUMMY,
+                visited,
+                None,
+                "dummy"
+            )
+            self.add_to_tree(dummy_node, f'(double click parent to fetch)')
+
+    def add_leaf_to_tree(self, child_column_key, child_column_value, parent_node):
+        node_text = f'{child_column_key}={child_column_value}'
+        child_node_type = NodeTypes.LEAF
+        if child_column_value == "":
+            node_text = f'{child_column_key}'
+        child_node = Node(
+            f'{parent_node.full_path}/({child_column_key}={child_column_value})',
+            parent_node,
+            child_node_type,
+            child_column_value,
+            child_column_key,
+            False,
+        )
+        self.add_to_tree(child_node, node_text)
 
     def create_new_table_tree(self, table, row_id):
 
