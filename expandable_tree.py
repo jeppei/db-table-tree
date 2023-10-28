@@ -20,7 +20,6 @@ class ExpandableTree:
         my_db_navigator = DBNavigator(DB(env))
 
         # create the main window with a Treeview widget
-
         self.theme = Themes.superhero
         self.show_already_visited_parents = False
 
@@ -257,8 +256,21 @@ class ExpandableTree:
         self.tree.tag_configure(NodeTypes.CHILDREN_WITH_CHILDREN.name, foreground=self.theme.color.info)
         self.tree.tag_configure(NodeTypes.PARENT.name,                 foreground=self.theme.color.primary)
         self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=self.theme.color.primary)
-        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=self.theme.color.border)
+        self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=self.theme.color.secondary)
         self.tree.tag_configure(NodeTags.VISITED,                      foreground=self.theme.color.success)
+
+        # Good colors
+        #  - success
+        #  - info
+        #  - danger
+        #  - fg
+        #  - inputfg
+        #  - primary
+
+        # Kind of good
+        #  - warning
+        #  - selectbg
+        #  - secondary
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
@@ -294,38 +306,6 @@ class ExpandableTree:
             False
         )
         self.add_to_tree(dumb_node, '')
-
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/primary', text='primary', tags=('primary', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/secondary', text='secondary', tags=('secondary', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/success', text='success', tags=('success', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/info', text='info', tags=('info', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/warning', text='warning', tags=('warning', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/danger', text='danger', tags=('danger', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/light', text='light', tags=('light', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/dark', text='dark', tags=('dark', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/bg', text='bg', tags=('bg', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/fg', text='fg', tags=('fg', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/selectbg', text='selectbg', tags=('selectbg', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/selectfg', text='selectfg', tags=('selectfg', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/border', text='border', tags=('border', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/inputfg', text='inputfg', tags=('inputfg', ))
-        # self.tree.insert(root_node_path, 1, f'{root_node_path}/inputbg', text='inputbg', tags=('inputbg', ))
-        #
-        # self.tree.tag_configure('primary',      foreground=self.theme.color.primary)
-        # self.tree.tag_configure('secondary',    foreground=self.theme.color.secondary)
-        # self.tree.tag_configure('success',      foreground=self.theme.color.success)
-        # self.tree.tag_configure('info',         foreground=self.theme.color.info)
-        # self.tree.tag_configure('warning',      foreground=self.theme.color.warning)
-        # self.tree.tag_configure('danger',       foreground=self.theme.color.danger)
-        # self.tree.tag_configure('light',        foreground=self.theme.color.light)
-        # self.tree.tag_configure('dark',         foreground=self.theme.color.dark)
-        # self.tree.tag_configure('bg',           foreground=self.theme.color.bg)
-        # self.tree.tag_configure('fg',           foreground=self.theme.color.fg)
-        # self.tree.tag_configure('selectbg',     foreground=self.theme.color.select_bg)
-        # self.tree.tag_configure('selectfg',     foreground=self.theme.color.select_fg)
-        # self.tree.tag_configure('border',       foreground=self.theme.color.border)
-        # self.tree.tag_configure('inputfg',      foreground=self.theme.color.input_fg)
-        # self.tree.tag_configure('inputbg',      foreground=self.theme.color.input_bg)
 
     def toggle_node(self, _):
         parent_path = self.tree.selection()[0]

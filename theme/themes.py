@@ -20,3 +20,24 @@ class Themes:
     vapor = Theme("vapor")
     simplex = Theme("simplex")
     cerculean = Theme("cerculean")
+
+all_themes = [
+    Themes.cosmo,
+    Themes.flatly,
+    Themes.litera,
+    Themes.minty,
+    Themes.lumen,
+    Themes.sandstone,
+    Themes.yeti,
+    Themes.pulse,
+    Themes.united,
+    Themes.morph,
+    Themes.journal,
+    Themes.darkly,
+    Themes.superhero,
+    Themes.solar,
+    Themes.cyborg,
+    Themes.vapor,
+    Themes.simplex,
+    Themes.cerculean,
+]
