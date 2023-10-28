@@ -13,43 +13,48 @@ class ExpandableTree:
         self.table = table
         self.row_id = row_id
         self.env = env
-        self.my_db_navigator = DBNavigator(DB(self.env))
+
         self.nodes = {}
+        self.my_db_navigator = DBNavigator(DB(self.env))
 
-        # database
-        my_db_navigator = DBNavigator(DB(env))
-
-        # create the main window with a Treeview widget
         self.theme = Themes.superhero
         self.show_already_visited_parents = False
 
-        self.root = tkb.Window(themename=self.theme.name)
-        self.root.geometry("1000x1000")
-        self.root.title("Expandable Tree")
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-        self.tree = tkb.Treeview(self.root, height=1, show="tree")
-
-        # Create a Combobox widget
-        all_table_names = my_db_navigator.get_all_table_names()
-        self.combo_box = tkb.Combobox(self.root, values=all_table_names)
-        self.combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
-        if table in self.combo_box['values']:
-            self.combo_box.set(table)
-
-        self.root.grid_rowconfigure(0, weight=0)
-
-        # Create a Text widget
-        self.text_box = tkb.Text(self.root, height=1, width=25, wrap="none")
-        self.text_box.insert("1.0", row_id)
-        self.text_box.grid(row=0, column=1, padx=0, pady=0, sticky="ew")  # Use grid layout manager
-        self.text_box.bind("<Return>", self.on_enter_pressed)
-
-        # Create a button
-        button = tkb.Button(self.root, text="GO!", command=self.button_click)
-        button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
+        self.root = self.create_window()
+        self.combo_box = self.create_combo_box_for_tables()
+        self.text_box = self.create_text_input_for_row_id()
+        self.button = self.create_go_button()
 
         self.root.mainloop()
+
+    def create_window(self):
+        root = tkb.Window(themename=self.theme.name)
+        root.geometry("1000x1000")
+        root.title("Expandable Tree")
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=1)
+        root.grid_rowconfigure(0, weight=0)
+        return root
+
+    def create_combo_box_for_tables(self):
+        all_table_names = self.my_db_navigator.get_all_table_names()
+        combo_box = tkb.Combobox(self.root, values=all_table_names)
+        combo_box.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")  # Use grid layout manager
+        if self.table in combo_box['values']:
+            combo_box.set(self.table)
+        return combo_box
+
+    def create_text_input_for_row_id(self):
+        text_box = tkb.Text(self.root, height=1, width=25, wrap="none")
+        text_box.insert("1.0", self.row_id)
+        text_box.grid(row=0, column=1, padx=0, pady=0, sticky="ew")  # Use grid layout manager
+        text_box.bind("<Return>", self.on_enter_pressed)
+        return text_box
+
+    def create_go_button(self):
+        button = tkb.Button(self.root, text="GO!", command=self.button_click)
+        button.grid(row=0, column=2, padx=0, pady=0)  # Use grid layout manager
+        return button
 
     def add_to_tree(self, node, node_text):
         if self.tree.exists(node.full_path):
@@ -258,19 +263,6 @@ class ExpandableTree:
         self.tree.tag_configure(NodeTypes.PARENT_LIST_NODE.name,       foreground=self.theme.color.primary)
         self.tree.tag_configure(NodeTags.NO_VALUE,                     foreground=self.theme.color.secondary)
         self.tree.tag_configure(NodeTags.VISITED,                      foreground=self.theme.color.success)
-
-        # Good colors
-        #  - success
-        #  - info
-        #  - danger
-        #  - fg
-        #  - inputfg
-        #  - primary
-
-        # Kind of good
-        #  - warning
-        #  - selectbg
-        #  - secondary
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
