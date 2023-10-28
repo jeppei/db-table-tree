@@ -228,14 +228,17 @@ class ExpandableTree:
         parent_node,
         explored_column
     ):
-        parent_rows_count = self.my_db_navigator.get_row_count_of_table(
-            child_table_name,
-            child_column_key,
-            parent_node.node_id
-        )
-
         child_node_type = NodeTypes.PARENT
         visited = child_column_key == explored_column
+
+        count_text = ""
+        if parent_node.node_id is not None and parent_node.node_id != "":
+            parent_rows_count = self.my_db_navigator.get_row_count_of_table(
+                child_table_name,
+                child_column_key,
+                parent_node.node_id
+            )
+            count_text = f"({parent_rows_count})"
 
         child_path = f'{parent_node.full_path}/{child_table_name}({child_column_key}=)'
         child_node = Node(
@@ -248,7 +251,7 @@ class ExpandableTree:
             child_column_key,
             parent_node.node_id,
         )
-        self.add_to_tree(child_node, f'[{child_table_name}] ({parent_rows_count})')
+        self.add_to_tree(child_node, f'[{child_table_name}] {count_text}')
 
         if child_node_type == NodeTypes.PARENT:
             dummy_node = Node(
