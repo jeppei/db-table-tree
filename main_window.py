@@ -4,9 +4,9 @@ from database.db import DB
 from database.db_navigator import DBNavigator
 from theme.themes import Themes
 
-from tab.database_search import DatabaseSearch
-from tab.table_explorer import TableExplorer
-from tab.settings import Settings
+from database_search_tab.database_search import DatabaseSearch
+from table_explorer_tab.table_explorer import TableExplorer
+from tab.settings_tab.settings_tab import SettingsTab
 
 
 class MainWindow:
@@ -22,9 +22,9 @@ class MainWindow:
         self.database_search = tab2
         self.settings = tab3
 
-        self.table_explorer = TableExplorer(tab1, self.theme, self.my_db_navigator, table, row_id)
+        self.table_explorer = TableExplorer(tab3, self.theme, self.my_db_navigator, table, row_id)
         self.database_search = DatabaseSearch(tab2, self.my_db_navigator)
-        self.settings = Settings(tab3, self.root_window, self.table_explorer)
+        self.settings = SettingsTab(tab1, self.root_window, self.table_explorer)
 
         self.root_window.mainloop()
 

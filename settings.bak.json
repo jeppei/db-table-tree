@@ -18,6 +18,6 @@
         }
     ],
     "selected_connection_setting_name": "production_1",
-    "show_parents": "1",
+    "show_parents": true,
     "theme": "superhero"
 }
