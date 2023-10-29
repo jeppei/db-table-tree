@@ -16,8 +16,8 @@ class MainWindow:
         self.settings = tab3
 
         self.settings = SettingsTab(tab1, self.root_window)
-        self.database_search = DatabaseSearch(tab2, self.settings)
-        self.table_explorer = TableExplorer(tab3, self.settings, table, row_id)
+        self.table_explorer = TableExplorer(tab2, self.settings, table, row_id)
+        self.database_search = DatabaseSearch(tab3, self.settings)
         self.settings.set_table_explorer(self.table_explorer)
 
         self.root_window.mainloop()
@@ -48,8 +48,8 @@ def create_notebook(parent):
     tab3.grid_rowconfigure(1, weight=1)
     tab3.grid_columnconfigure(0, weight=1)
 
-    notebook.add(tab1, text="Table explorer")
-    notebook.add(tab2, text="Database search")
-    notebook.add(tab3, text="Settings")
+    notebook.add(tab1, text="Settings")
+    notebook.add(tab2, text="Table explorer")
+    notebook.add(tab3, text="Database search")
 
     return tab1, tab2, tab3
