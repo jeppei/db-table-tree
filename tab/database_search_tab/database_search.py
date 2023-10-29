@@ -1,12 +1,14 @@
 import ttkbootstrap as tkb
 from tkinter import ttk
 
+from settings_tab import SettingsTab
+
 
 class DatabaseSearch:
 
-    def __init__(self, root, db_navigator):
+    def __init__(self, root, settings_tab: SettingsTab):
         self.root = root
-        self.db_navigator = db_navigator  # Initialize your database utility
+        self.settings_tab = settings_tab  # Initialize your database utility
         self.result_label = None
 
         # Create and place the entry, combobox, and search button
@@ -45,11 +47,11 @@ class DatabaseSearch:
         if search_type == "table":
             self.result_tree.heading("Column1", text="Name")
             self.result_tree.heading("Column2", text="Count")
-            column1, column2 = self.db_navigator.find_table(search_string)
+            column1, column2 = self.settings_tab.settings.my_db_navigator.find_table(search_string)
         elif search_type == "column":
             self.result_tree.heading("Column1", text="Table")
             self.result_tree.heading("Column2", text="Column")
-            column1, column2 = self.db_navigator.find_column(search_string)
+            column1, column2 = self.settings_tab.settings.my_db_navigator.find_column(search_string)
         else:
             column1 = []
             column2 = []

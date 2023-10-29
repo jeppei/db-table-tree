@@ -1,20 +1,20 @@
 {
     "connections": [
         {
-            "name": "production_1",
-            "host": "prod_1",
-            "port": "1234_1",
-            "database": "prod_db_1",
-            "user": "prod_user_1",
-            "password": "prod_password_1"
+            "name": "production",
+            "host": "$PROD_DATABASE_HOST",
+            "port": "$PROD_DATABASE_PORT",
+            "database": "$PROD_DATABASE_NAME",
+            "user": "$PROD_DATABASE_USER",
+            "password": "$PROD_DATABASE_PASSWORD"
         },
         {
-            "name": "test_2",
-            "host": "test_2",
-            "port": "5678_2",
-            "database": "test_db_2",
-            "user": "test_user_2",
-            "password": "test_password_2"
+            "name": "testing",
+            "host": "$TEST_DATABASE_HOST",
+            "port": "$TEST_DATABASE_PORT",
+            "database": "$TEST_DATABASE_NAME",
+            "user": "$TEST_DATABASE_USER",
+            "password": "$TEST_DATABASE_PASSWORD"
         },
         {
             "name": "local",
@@ -25,7 +25,7 @@
             "password": "$LOCAL_DATABASE_PASSWORD"
         }
     ],
-    "selected_connection_setting_name": "local",
+    "selected_connection_setting_name": "production",
     "show_parents": "1",
-    "theme": "cyborg"
+    "theme": "superhero"
 }

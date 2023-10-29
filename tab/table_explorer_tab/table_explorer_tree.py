@@ -3,20 +3,21 @@ import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.image
 from node.node import Node
 from node_tags import NodeTags
 from node_types import NodeTypes
+from settings_tab import SettingsTab
 
 
 class TableExplorerTree:
 
-    def __init__(self, root, theme, table, row_id, db_navigator):
+    def __init__(self, root, table, row_id, settings_tab: SettingsTab):
 
         self.nodes = {}
-        self.my_db_navigator = db_navigator
+        self.settings_tab = settings_tab
         self.show_already_visited_parents = False
 
         self.tree = tkb.Treeview(root, height=20, show="tree")
         self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
 
-        self.change_theme(theme)
+        self.change_theme(self.settings_tab.settings.get_theme())
 
         self.tree.bind("<<TreeviewOpen>>", self.toggle_node)
         style_name = "Custom.Treeview"
@@ -100,9 +101,10 @@ class TableExplorerTree:
             self.add_parent_rows_to_tree(parent_node, parent_path)
 
         if parent_node.node_type == NodeTypes.CHILDREN_WITH_CHILDREN:
-            column_keys, column_values = self.my_db_navigator.get_children(parent_node.table_name, parent_node.node_id)
-            new_parent_children_with_children = self.my_db_navigator.get_children_with_children(parent_node.table_name)
-            new_parent_parents = self.my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
+            db_navigator = self.settings_tab.settings.my_db_navigator
+            column_keys, column_values = db_navigator.get_children(parent_node.table_name, parent_node.node_id)
+            new_parent_children_with_children = db_navigator.get_children_with_children(parent_node.table_name)
+            new_parent_parents = db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
 
             self.add_children_to_tree(
                 new_parent_parents,
@@ -114,14 +116,15 @@ class TableExplorerTree:
             )
 
     def add_parent_rows_to_tree(self, parent_node, parent_path):
-        primary_keys = self.my_db_navigator.get_primary_key_of_table(parent_node.table_name)
-        new_parent_columns, new_parents, has_parents = self.my_db_navigator.get_parents(
+        db_navigator = self.settings_tab.settings.my_db_navigator
+        primary_keys = db_navigator.get_primary_key_of_table(parent_node.table_name)
+        new_parent_columns, new_parents, has_parents = db_navigator.get_parents(
             parent_node.table_name,
             parent_node.parent_column_name,
             parent_node.parent_column_name_value
         )
-        new_parent_children_with_children = self.my_db_navigator.get_children_with_children(parent_node.table_name)
-        new_parent_parents = self.my_db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
+        new_parent_children_with_children = db_navigator.get_children_with_children(parent_node.table_name)
+        new_parent_parents = db_navigator.get_parent_table_names_and_column_relation(parent_node.table_name)
         parent_list_number = 1
         for new_parent in new_parents:
 
@@ -232,7 +235,8 @@ class TableExplorerTree:
 
         count_text = ""
         if parent_node.node_id is not None and parent_node.node_id != "":
-            parent_rows_count = self.my_db_navigator.get_row_count_of_table(
+            db_navigator = self.settings_tab.settings.my_db_navigator
+            parent_rows_count = db_navigator.get_row_count_of_table(
                 child_table_name,
                 child_column_key,
                 parent_node.node_id

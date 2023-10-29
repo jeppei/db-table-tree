@@ -16,8 +16,8 @@ class MainWindow:
         self.settings = tab3
 
         self.settings = SettingsTab(tab1, self.root_window)
-        self.database_search = DatabaseSearch(tab2, self.settings.settings.my_db_navigator)
-        self.table_explorer = TableExplorer(tab3, self.settings.settings, table, row_id)
+        self.database_search = DatabaseSearch(tab2, self.settings)
+        self.table_explorer = TableExplorer(tab3, self.settings, table, row_id)
         self.settings.set_table_explorer(self.table_explorer)
 
         self.root_window.mainloop()

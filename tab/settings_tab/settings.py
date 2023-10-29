@@ -35,7 +35,7 @@ class Settings:
                 "password": "local_pwd"
             }
         ]
-        self.default_selected_connection_setting_name = "production"
+        self.default_selected_connection_setting_name = "local"
         self.default_selected_connection_setting = self.default_connections_settings[0]
         self.default_show_visited_parents = True
         self.default_theme = "superhero"
@@ -96,6 +96,7 @@ class Settings:
             json.dump(settings_to_save, file, indent=4)
 
         print(f"Settings saved to {self.settings_file}")
+        self.my_db_navigator = DBNavigator(DB(self.selected_connection_setting))
 
     def get_connection_settings(self, name):
         for connection_setting in self.connections_settings:
