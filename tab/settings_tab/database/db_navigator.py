@@ -147,6 +147,13 @@ class DBNavigator:
 
         return resulting_rows[0][0]
 
+    def execute_query(self, query):
+
+        with self._db:
+            resulting_rows, column_headers = self._db.execute_query(query)
+
+        return resulting_rows, column_headers
+
     # database search
     def find_table(self, table):
         query = f"""
