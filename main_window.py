@@ -8,7 +8,7 @@ from table_path_tab import TablePathTab
 
 
 class MainWindow:
-    def __init__(self, table, row_id):
+    def __init__(self):
 
         self.root_window = create_window()
 
@@ -18,7 +18,7 @@ class MainWindow:
         self.settings = tab3
 
         self.settings = SettingsTab(tab1, self.root_window)
-        self.table_explorer = TableExplorer(tab2, self.settings, table, row_id)
+        self.table_explorer = TableExplorer(tab2, self.settings)
         self.database_search = DatabaseSearch(tab3, self.settings)
         self.database_query = DatabaseQuery(tab4, self.settings)
         self.table_path = TablePathTab(tab5, self.settings)

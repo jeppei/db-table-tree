@@ -8,7 +8,7 @@ from settings_tab import SettingsTab
 
 class TableExplorerTree:
 
-    def __init__(self, root, table, row_id, settings_tab: SettingsTab):
+    def __init__(self, root, settings_tab: SettingsTab, table, row_id):
 
         self.nodes = {}
         self.settings_tab = settings_tab
