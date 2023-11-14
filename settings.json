@@ -25,7 +25,7 @@
             "password": "$LOCAL_DATABASE_PASSWORD"
         }
     ],
-    "selected_connection_setting_name": "local",
+    "selected_connection_setting_name": "production",
     "show_parents": "1",
     "theme": "superhero"
 }
