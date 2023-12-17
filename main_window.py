@@ -1,10 +1,10 @@
 import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
-from database_query_tab import DatabaseQuery
-from database_search_tab.database_search import DatabaseSearch
-from table_explorer_tab.table_explorer import TableExplorer
+from tab.database_query_tab.database_query_tab import DatabaseQuery
+from tab.database_search_tab.database_search import DatabaseSearch
+from tab.table_explorer_tab.table_explorer import TableExplorer
 from tab.settings_tab.settings_tab import SettingsTab
-from table_path_tab import TablePathTab
+from tab.table_path_tab.table_path_tab import TablePathTab
 
 
 class MainWindow:

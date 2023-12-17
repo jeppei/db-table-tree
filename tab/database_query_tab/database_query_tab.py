@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 
-from settings_tab import SettingsTab
+from tab.settings_tab.settings_tab import SettingsTab
 
 
 class DatabaseQuery:

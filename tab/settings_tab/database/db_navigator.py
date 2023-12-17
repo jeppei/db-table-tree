@@ -1,4 +1,4 @@
-from database.db import DB
+from tab.settings_tab.database.db import DB
 
 
 def has_no_value(variable):

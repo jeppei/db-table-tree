@@ -1,10 +1,10 @@
 import ttkbootstrap as tkb
 import json
 
-from database_connection_settings import DatabaseConnectionSettings
-from db import DB
-from db_navigator import DBNavigator
-from themes import all_themes
+from tab.settings_tab.database_connection_settings import DatabaseConnectionSettings
+from tab.settings_tab.database.db import DB
+from tab.settings_tab.database.db_navigator import DBNavigator
+from theme.themes import all_themes
 
 
 class Settings:

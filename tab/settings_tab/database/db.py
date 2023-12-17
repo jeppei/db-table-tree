@@ -1,5 +1,6 @@
+from tkinter import messagebox
 import mysql.connector  # pip install mysql-connector-python
-from database_connection_settings import DatabaseConnectionSettings
+from tab.settings_tab.database_connection_settings import DatabaseConnectionSettings
 import os
 
 
@@ -50,6 +51,15 @@ class DB:
             raise ValueError("Dont query unless you connect")
 
         print(query)
-        self._my_cursor.execute(query)
+        try:
+            self._my_cursor.execute(query)
+        except mysql.connector.Error as error:
+            if error.errno == 1146 and error.sqlstate == '42S02':
+                messagebox.showinfo("The table doesnt exist", "The selected table doesn't exist!")
+                return [], []
+            else:
+                messagebox.showinfo("Unknown error", "Unknown error while trying to execute the query\n" + query)
+                return [], []
+
         columns = [i[0] for i in self._my_cursor.description]
         return self._my_cursor.fetchall(), columns

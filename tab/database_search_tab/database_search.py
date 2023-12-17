@@ -1,7 +1,7 @@
 import ttkbootstrap as tkb
 from tkinter import ttk
 
-from settings_tab import SettingsTab
+from tab.settings_tab.settings_tab import SettingsTab
 
 
 class DatabaseSearch:

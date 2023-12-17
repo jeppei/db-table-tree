@@ -1,9 +1,9 @@
 import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
-from node.node import Node
-from node_tags import NodeTags
-from node_types import NodeTypes
-from settings_tab import SettingsTab
+from tab.table_explorer_tab.node.node import Node
+from tab.table_explorer_tab.node.node_tags import NodeTags
+from tab.table_explorer_tab.node.node_types import NodeTypes
+from tab.settings_tab.settings_tab import SettingsTab
 
 
 class TableExplorerTree:

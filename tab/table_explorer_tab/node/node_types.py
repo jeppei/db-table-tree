@@ -1,4 +1,4 @@
-from node.node_type import NodeType
+from tab.table_explorer_tab.node.node_type import NodeType
 
 
 class NodeTypes:

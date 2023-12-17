@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import ttkbootstrap as tkb  # sudo apt-get install python3-pil python3-pil.imagetk
 
-from settings_tab import SettingsTab
+from tab.settings_tab.settings_tab import SettingsTab
 
 
 class TablePathTab:
