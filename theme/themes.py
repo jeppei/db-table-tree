@@ -21,6 +21,7 @@ class Themes:
     simplex = Theme("simplex")
     cerculean = Theme("cerculean")
 
+
 all_themes = [
     Themes.cosmo,
     Themes.flatly,
