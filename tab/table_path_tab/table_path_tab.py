@@ -11,58 +11,80 @@ from tab.settings_tab.settings_tab import SettingsTab
 
 class TablePathTab:
     def __init__(self, root, settings_tab: SettingsTab):
-        self.root = root
         self.settings_tab = settings_tab
+        self.root = root
+
+        self.log_text = None
+        self.depth_entry = None
+        self.draw_all_entry = None
+        self.draw_all_var = None
+        self.ignore_entry = None
+        self.end_table_entry = None
+        self.start_table_entry = None
+        self.env_entry = None
+
+        self.result_frame = None
+        self.canvas = None
+        self.canvas_widget = None
 
         self.create_input_fields()
-        self.create_graph_canvas()  # Add a canvas for graph display
+        self.create_graph_canvas()
 
     def create_input_fields(self):
-        frame = tkb.Frame(self.root)
-        frame.pack(padx=10, pady=10)
+        input_frame = tkb.LabelFrame(self.root, text="Input")
+        input_frame.pack(padx=10, pady=10, fill='both', expand=True)
+        input_frame.columnconfigure(0, weight=1)
+        input_frame.columnconfigure(1, weight=1)
+
+        pad_y_space = 5
+        pad_x_space = 10
 
         # Entry boxes for input
-        tkb.Label(frame, text="Start Table:").grid(row=0, column=0)
-        self.start_table_entry = tkb.Entry(frame)
-        self.start_table_entry.grid(row=0, column=1)
+        tkb.Label(input_frame, text="Start Table:").grid(row=0, column=0, padx=10, pady=10, sticky='ew')
+        self.start_table_entry = tkb.Entry(input_frame)
+        self.start_table_entry.grid(row=0, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
 
-        tkb.Label(frame, text="End Table:").grid(row=1, column=0)
-        self.end_table_entry = tkb.Entry(frame)
-        self.end_table_entry.grid(row=1, column=1)
+        tkb.Label(input_frame, text="End Table:").grid(row=1, column=0, padx=10, pady=10, sticky='ew')
+        self.end_table_entry = tkb.Entry(input_frame)
+        self.end_table_entry.grid(row=1, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
 
-        tkb.Label(frame, text="Environment:").grid(row=2, column=0)
-        self.env_entry = tkb.Entry(frame)
-        self.env_entry.grid(row=2, column=1)
+        tkb.Label(input_frame, text="Environment:").grid(row=2, column=0, padx=10, pady=10, sticky='ew')
+        self.env_entry = tkb.Entry(input_frame)
+        self.env_entry.grid(row=2, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
         self.env_entry.insert(0, "local")  # Default value
 
-        tkb.Label(frame, text="Ignore Tables:").grid(row=3, column=0)
-        self.ignore_entry = tkb.Entry(frame)
-        self.ignore_entry.grid(row=3, column=1)
+        tkb.Label(input_frame, text="Ignore Tables:").grid(row=3, column=0, padx=10, pady=10, sticky='ew')
+        self.ignore_entry = tkb.Entry(input_frame)
+        self.ignore_entry.grid(row=3, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
 
-        tkb.Label(frame, text="Draw All:").grid(row=4, column=0)
+        tkb.Label(input_frame, text="Draw All:").grid(row=4, column=0, padx=10, pady=10, sticky='ew')
         self.draw_all_var = tkb.BooleanVar()
-        self.draw_all_entry = tkb.Checkbutton(frame, text="Draw All Nodes", variable=self.draw_all_var)
-        self.draw_all_entry.grid(row=4, column=1)
+        self.draw_all_entry = tkb.Checkbutton(input_frame, text="Draw All Nodes", variable=self.draw_all_var)
+        self.draw_all_entry.grid(row=4, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
 
-        tkb.Label(frame, text="Depth:").grid(row=5, column=0)
-        self.depth_entry = tkb.Entry(frame)
-        self.depth_entry.grid(row=5, column=1)
-        self.depth_entry.insert(0, "5")  # Default value
+        tkb.Label(input_frame, text="Depth:").grid(row=5, column=0, padx=10, pady=10, sticky='ew')
+        self.depth_entry = tkb.Entry(input_frame)
+        self.depth_entry.grid(row=5, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
+        self.depth_entry.insert(0, "5")
 
         # Button to create the graph
-        create_button = tkb.Button(frame, text="Create Graph", command=self.create_graph)
-        create_button.grid(row=6, column=0, columnspan=2)
+        create_button = tkb.Button(input_frame, text="Create Graph", command=self.create_graph)
+        create_button.grid(row=6, column=0, pady=pad_y_space, padx=pad_x_space, sticky="we", columnspan=2)
 
         # Log display
-        self.log_text = tkb.Text(frame, height=10, width=40)
-        self.log_text.grid(row=7, column=0, columnspan=2)
+        self.log_text = tkb.Text(input_frame, height=10, width=40)
+        self.log_text.grid(row=7, column=0, pady=pad_y_space, padx=pad_x_space, sticky="we", columnspan=2)
         self.log_text.config(state=tkb.DISABLED)  # Make it read-only
 
     def create_graph_canvas(self,):
-        # Create a canvas to display the graph
-        self.canvas = FigureCanvasTkAgg(plt.figure(), master=self.root)
-        self.canvas.get_tk_widget().pack()
-        self.canvas.get_tk_widget().pack_forget()  # Initially hide the canvas
+
+        self.result_frame = tkb.LabelFrame(self.root, text="Path")
+        self.result_frame.pack(padx=10, pady=10, fill='both', expand=True)
+        self.result_frame.columnconfigure(0, weight=1)
+        self.result_frame.columnconfigure(1, weight=1)
+
+        self.canvas = FigureCanvasTkAgg(plt.figure(), master=self.result_frame)
+        self.canvas.get_tk_widget().pack(padx=10, pady=10, fill='both', expand=True)
 
     def debug(self, message):
         self.log_text.config(state=tkb.NORMAL)
@@ -91,6 +113,7 @@ class TablePathTab:
             self.log_text.insert(tkb.END, "Please enter valid start and end tables.\n")
 
         self.log_text.config(state=tkb.DISABLED)
+
 
     def get_my_db(self, env):
         print("Connecting to the database")
@@ -127,86 +150,6 @@ class TablePathTab:
             password=password,
             database=database
         )
-
-    def create_network_graph(
-            self,
-            draw_all_nodes,
-            nodes_with_depth,
-            depth,
-            visited,
-            all_edges,
-            start_table,
-            end_table,
-            previous_edge
-    ):
-        graph = nx.DiGraph()
-        if draw_all_nodes:
-            print("Calculating node positions")
-            y = [0] * (len(nodes_with_depth) + 1)
-            for node in visited:
-                x = depth[node]
-                yy = y[x] - nodes_with_depth[x] / 2
-                graph.add_node(node, pos=(x, yy))
-                y[x] += 1
-
-            print("Adding all edges")
-            for start in all_edges.keys():
-                for end in all_edges[start]:
-                    graph.add_edge(start, end, color='black', weight=1)
-
-        print("Checking if there is a path to the end table")
-        end = end_table
-        start = start_table
-        colored_nodes = [end]
-        while end != start:
-            if end not in previous_edge:
-                break
-            previous = previous_edge[end]
-            colored_nodes.append(previous)
-            if end in all_edges.keys() and previous in all_edges[end]:
-                graph.add_edge(end, previous, color='green', weight=4)
-            else:
-                graph.add_edge(previous, end, color='green', weight=4)
-            end = previous
-        color_map = ['green' if node in colored_nodes else '#89CFF0'
-                     for node in graph]
-
-        print("Getting all data to be able to plot the graph")
-        pos = nx.get_node_attributes(graph, 'pos')
-        edges = graph.edges()
-        colors = [graph[u][v]['color'] for u, v in edges]
-        weights = [graph[u][v]['weight'] for u, v in edges]
-
-        if len(edges) == 0:
-            print("Could not find a path from " + start + " to " + end)
-
-        print("Drawing the graph")
-        fig, ax = plt.subplots(figsize=(5, 4))
-        if draw_all_nodes:
-            nx.draw(
-                graph,
-                pos=pos,
-                edge_color=colors,
-                node_color=color_map,
-                width=weights,
-                with_labels=True,
-            )
-        else:
-            nx.draw(
-                graph,
-                edge_color=colors,
-                node_color=color_map,
-                width=weights,
-                with_labels=True,
-            )
-
-        # Embed the Matplotlib figure in a tkinter window
-
-        self.canvas = FigureCanvasTkAgg(fig, master=self.root)
-        self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.pack()
-
-
 
     def find_path(self, mydb, start_table, end_table, ignore, max_depth, draw_all_nodes):
         print("Initiating variables")
@@ -311,3 +254,81 @@ class TablePathTab:
             end_table,
             previous_edge
         )
+
+    def create_network_graph(
+        self,
+        draw_all_nodes,
+        nodes_with_depth,
+        depth,
+        visited,
+        all_edges,
+        start_table,
+        end_table,
+        previous_edge
+    ):
+        graph = nx.DiGraph()
+        if draw_all_nodes:
+            print("Calculating node positions")
+            y = [0] * (len(nodes_with_depth) + 1)
+            for node in visited:
+                x = depth[node]
+                yy = y[x] - nodes_with_depth[x] / 2
+                graph.add_node(node, pos=(x, yy))
+                y[x] += 1
+
+            print("Adding all edges")
+            for start in all_edges.keys():
+                for end in all_edges[start]:
+                    graph.add_edge(start, end, color='black', weight=1)
+
+        print("Checking if there is a path to the end table")
+        end = end_table
+        start = start_table
+        colored_nodes = [end]
+        while end != start:
+            if end not in previous_edge:
+                break
+            previous = previous_edge[end]
+            colored_nodes.append(previous)
+            if end in all_edges.keys() and previous in all_edges[end]:
+                graph.add_edge(end, previous, color='green', weight=4)
+            else:
+                graph.add_edge(previous, end, color='green', weight=4)
+            end = previous
+        color_map = ['green' if node in colored_nodes else '#89CFF0'
+                     for node in graph]
+
+        print("Getting all data to be able to plot the graph")
+        pos = nx.get_node_attributes(graph, 'pos')
+        edges = graph.edges()
+        colors = [graph[u][v]['color'] for u, v in edges]
+        weights = [graph[u][v]['weight'] for u, v in edges]
+
+        if len(edges) == 0:
+            print("Could not find a path from " + start + " to " + end)
+
+        print("Drawing the graph")
+        fig, ax = plt.subplots(figsize=(5, 4))
+        if draw_all_nodes:
+            nx.draw(
+                graph,
+                pos=pos,
+                edge_color=colors,
+                node_color=color_map,
+                width=weights,
+                with_labels=True,
+            )
+        else:
+            nx.draw(
+                graph,
+                edge_color=colors,
+                node_color=color_map,
+                width=weights,
+                with_labels=True,
+            )
+
+        # Embed the Matplotlib figure in a tkinter window
+
+        self.canvas = FigureCanvasTkAgg(fig, master=self.result_frame)
+        self.canvas.get_tk_widget().pack(padx=10, pady=10, fill='both', expand=True)
+

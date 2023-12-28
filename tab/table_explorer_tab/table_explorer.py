@@ -7,6 +7,7 @@ from tab.table_explorer_tab.table_explorer_tree import TableExplorerTree
 class TableExplorer:
 
     def __init__(self, parent_tab, settings_tab: SettingsTab):
+        self.theme = None
         self.parent_tab = parent_tab
         self.settings_tab = settings_tab
         self.combo_box = self.create_combo_box_for_tables(parent_tab)

@@ -15,7 +15,7 @@ class TableExplorerTree:
         self.show_already_visited_parents = False
 
         self.tree = tkb.Treeview(root, height=20, show="tree")
-        self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
+        self.tree.grid(row=1, column=0, padx=10, pady=10, columnspan=3, sticky="nsew")  # Use grid layout and sticky option
 
         self.change_theme(self.settings_tab.settings.get_theme())
 

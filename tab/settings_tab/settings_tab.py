@@ -23,7 +23,7 @@ class SettingsTab:
         database_settings_frame = tkb.LabelFrame(self.parent, text="Database")
         database_settings_frame.grid(row=0, column=0, padx=10, pady=10, sticky="we")
         database_settings_frame.columnconfigure(0, weight=1)
-        database_settings_frame.columnconfigure(1, weight=1)  # Add this line
+        database_settings_frame.columnconfigure(1, weight=1)
 
         # Database settings
         connection_label = tkb.Label(database_settings_frame, text="Connection:")
