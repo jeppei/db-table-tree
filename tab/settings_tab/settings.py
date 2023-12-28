@@ -5,6 +5,8 @@ from tab.settings_tab.database_connection_settings import DatabaseConnectionSett
 from tab.settings_tab.database.db import DB
 from tab.settings_tab.database.db_navigator import DBNavigator
 from theme.themes import all_themes
+import os
+import shutil
 
 
 class Settings:
@@ -41,7 +43,13 @@ class Settings:
         self.default_theme = "superhero"
 
         # Try read from file
-        self.settings_file = "settings.json"  # JSON file to store settings
+        self.settings_file = "settings.json"
+        template_file = "settings.json.template"
+        if not os.path.exists(self.settings_file):
+            print("Could not find a settings file, will use the template to create a new one")
+            print(f"Copying {template_file} to {self.settings_file}")
+            shutil.copy(template_file, self.settings_file)
+
         print(f"Loading settings from {self.settings_file}")
         try:
             with open(self.settings_file, "r") as file:
