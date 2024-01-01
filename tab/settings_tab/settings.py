@@ -43,8 +43,11 @@ class Settings:
         self.default_theme = "superhero"
 
         # Try read from file
-        self.settings_file = "settings.json"
-        template_file = "settings.json.template"
+        settings_tab_folder = os.path.dirname(os.path.abspath(__file__))
+        tab_folder = os.path.dirname(settings_tab_folder)
+        root_folder = os.path.dirname(tab_folder)
+        self.settings_file = os.path.join(root_folder, "settings.json")
+        template_file = os.path.join(root_folder, "settings.json.template")
         if not os.path.exists(self.settings_file):
             print("Could not find a settings file, will use the template to create a new one")
             print(f"Copying {template_file} to {self.settings_file}")

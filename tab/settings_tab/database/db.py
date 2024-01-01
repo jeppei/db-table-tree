@@ -58,7 +58,9 @@ class DB:
                 messagebox.showinfo("The table doesnt exist", "The selected table doesn't exist!")
                 return [], []
             else:
-                messagebox.showinfo("Unknown error", "Unknown error while trying to execute the query\n" + query)
+                messagebox.showinfo(
+                    "Unknown error", "Unknown error while trying to execute the query\n\n" + query + "\n\n" + error.msg
+                )
                 return [], []
 
         columns = [i[0] for i in self._my_cursor.description]

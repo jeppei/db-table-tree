@@ -3,7 +3,9 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 
-from sql_keywords import SQL_KEYWORDS
+from tab.database_query_tab.sql_keywords import SQL_KEYWORDS
+from tab.database_query_tab.sql_functions import SQL_FUNCTIONS
+from tab.database_query_tab.sql_symbols import SQL_SYMBOLS
 from tab.settings_tab.settings_tab import SettingsTab
 
 
@@ -88,19 +90,30 @@ class DatabaseQuery:
             position = 0
             words = line.split()
             for word in words:
-                word_length = len(word)
-
                 start_pos = f"{line_number}.{position}"
-                end_pos = f"{start_pos}+{word_length}c"
+                end_pos = f"{start_pos}+{len(word)}c"
+
+                contains_start_parenthesis = "(" in word
+                function_word = word.split("(")[0]
+                function_word_end_pos = f"{start_pos}+{len(function_word)}c"
 
                 if word.upper() in SQL_KEYWORDS:
                     self.query_text.tag_add(word.lower(), start_pos, end_pos)
                     self.query_text.tag_config(word.lower(), foreground=theme.color.warning)
+
+                elif (contains_start_parenthesis and function_word.upper() in SQL_FUNCTIONS) or (word in SQL_FUNCTIONS):
+                    self.query_text.tag_add(function_word.lower(), start_pos, function_word_end_pos)
+                    self.query_text.tag_config(function_word.lower(), foreground="blue")
+
+                elif word.upper() in SQL_SYMBOLS:
+                    self.query_text.tag_add(word.lower(), start_pos, end_pos)
+                    self.query_text.tag_config(word.lower(), foreground="grey")
+
                 else:
                     self.query_text.tag_add("default", start_pos, end_pos)
                     self.query_text.tag_config("default", foreground=theme.color.fg)
 
-                position += word_length + 1
+                position += len(word) + 1
             line_number = line_number + 1
 
     def autocorrect(self, event):
