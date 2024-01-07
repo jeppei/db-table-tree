@@ -1,7 +1,15 @@
+import logging
+import warnings
 from tkinter import messagebox
 import mysql.connector  # pip install mysql-connector-python
 from tab.settings_tab.database_connection_settings import DatabaseConnectionSettings
 import os
+from sqlalchemy import create_engine, MetaData
+
+# Suppress SQLAlchemy warnings about column types it doesn't recognize
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+logging.captureWarnings(True)
+logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
 
 def read_setting(param):
@@ -21,6 +29,7 @@ class DB:
         self.user = read_setting(self.database_connection_settings.user.get())
         self.password = read_setting(self.database_connection_settings.password.get())
         self.database = read_setting(self.database_connection_settings.database.get())
+        self.table_to_column_dict = self.get_table_and_columns()
 
         print(
             f'Connecting to the {self.name} '
@@ -65,3 +74,17 @@ class DB:
 
         columns = [i[0] for i in self._my_cursor.description]
         return self._my_cursor.fetchall(), columns
+
+    def get_table_and_columns(self):
+        engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}')
+
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+
+        table_names = metadata.tables.keys()
+        table_to_columns = {}
+        for table_name in table_names:
+            table = metadata.tables[table_name]
+            columns = [column.key for column in table.columns]
+            table_to_columns[table_name] = columns
+        return table_to_columns

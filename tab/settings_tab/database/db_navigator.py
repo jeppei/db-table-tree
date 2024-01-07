@@ -193,3 +193,7 @@ class DBNavigator:
             column_names.append(row[1])
 
         return table_names, column_names
+
+    def get_tables_and_columns(self):
+        return self._db.table_to_column_dict
+

@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 
+import settings_tab
 from tab.database_query_tab.sql_keywords import SQL_KEYWORDS
 from tab.database_query_tab.sql_functions import SQL_FUNCTIONS
 from tab.database_query_tab.sql_symbols import SQL_SYMBOLS
@@ -85,6 +86,8 @@ class DatabaseQuery:
 
         theme = self.settings_tab.get_theme()
 
+        db_navigator = self.settings_tab.settings.my_db_navigator
+        tables_and_columns = db_navigator.get_tables_and_columns()
         line_number = 1
         for line in sql_query.split('\n'):
             position = 0
@@ -98,23 +101,46 @@ class DatabaseQuery:
                 function_word_end_pos = f"{start_pos}+{len(function_word)}c"
 
                 if word.upper() in SQL_KEYWORDS:
-                    self.query_text.tag_add(word.lower(), start_pos, end_pos)
-                    self.query_text.tag_config(word.lower(), foreground=theme.color.warning)
+                    self.add_tag_for_word(start_pos, end_pos, word.lower(), theme.color.warning)
 
-                elif (contains_start_parenthesis and function_word.upper() in SQL_FUNCTIONS) or (word in SQL_FUNCTIONS):
-                    self.query_text.tag_add(function_word.lower(), start_pos, function_word_end_pos)
-                    self.query_text.tag_config(function_word.lower(), foreground="blue")
+                elif (contains_start_parenthesis and function_word.upper() in SQL_FUNCTIONS) or (word.upper() in SQL_FUNCTIONS):
+                    self.add_tag_for_word(start_pos, function_word_end_pos, function_word.lower(), "blue")
 
                 elif word.upper() in SQL_SYMBOLS:
-                    self.query_text.tag_add(word.lower(), start_pos, end_pos)
-                    self.query_text.tag_config(word.lower(), foreground="grey")
+                    self.add_tag_for_word(start_pos, end_pos, word.lower(), "grey")
+
+                elif '.' in word and word.split('.')[0] in tables_and_columns:
+                    table_column = word.split('.')
+                    table = table_column[0]
+                    all_tables = tables_and_columns[table]
+
+                    table_end_pos = f"{start_pos}+{len(table)}c"
+                    column_start_pos = f"{start_pos}+{len(table)+1}c"
+                    self.add_tag_for_word(start_pos, table_end_pos, table, "orange")
+
+                    column = table_column[1]
+
+                    if column in all_tables:
+                        self.add_tag_for_word(column_start_pos, end_pos, word, "yellow")
+                    else:
+                        self.add_tag_for_word(column_start_pos, end_pos, word, "red")
+
+                elif word in tables_and_columns:
+                    self.add_tag_for_word(start_pos, end_pos, word, "orange")
 
                 else:
-                    self.query_text.tag_add("default", start_pos, end_pos)
-                    self.query_text.tag_config("default", foreground=theme.color.fg)
+                    self.add_default_tag_for_word(start_pos, end_pos, theme.color.fg)
 
                 position += len(word) + 1
             line_number = line_number + 1
+
+    def add_tag_for_word(self, start_pos, end_pos, word, color):
+        self.query_text.tag_add(word, start_pos, end_pos)
+        self.query_text.tag_config(word, foreground=color)
+
+    def add_default_tag_for_word(self, start_pos, end_pos, color):
+        self.query_text.tag_add("default", start_pos, end_pos)
+        self.query_text.tag_config("default", foreground=color)
 
     def autocorrect(self, event):
         for widget in self.root.winfo_children():
