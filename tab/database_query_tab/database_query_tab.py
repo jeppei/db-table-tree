@@ -196,18 +196,25 @@ class DatabaseQuery:
         if len(words) == 0:
             return
 
+        sql_query = self.query_text.get("1.0", tk.END)
+        aliases = self.get_aliases(sql_query)
+        tables_and_aliases = set(self.tables_and_columns.keys()) | set(aliases.keys())
         current_word = words[word_index]
-        all_sql_words_and_tables = SQL_KEYWORDS | SQL_FUNCTIONS | set(self.tables_and_columns.keys())
+        all_sql_words_and_tables = SQL_KEYWORDS | SQL_FUNCTIONS | tables_and_aliases
 
         if current_word in all_sql_words_and_tables:
             return
 
         if '.' in current_word:
-            table, _ = current_word.split('.', 1)
+            alias, _ = current_word.split('.', 1)
+            table = alias
+            if alias in aliases:
+                table = aliases[table]
+
             words_to_check_against = set()
-            if table in self.tables_and_columns:
+            if alias in tables_and_aliases:
                 for column in self.tables_and_columns[table]:
-                    words_to_check_against.add(f"{table}.{column}")
+                    words_to_check_against.add(f"{alias}.{column}")
         else:
             words_to_check_against = all_sql_words_and_tables
 
@@ -216,6 +223,9 @@ class DatabaseQuery:
 
         if suggestions_sorted:
             suggested_words.extend(suggestions_sorted)
+
+        if current_word in suggestions_sorted:
+            suggestions_sorted.remove(current_word)
 
         if len(suggestions_sorted) == 0:
             return
