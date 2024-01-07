@@ -55,6 +55,19 @@ class DatabaseQuery:
         self.hsb.grid(row=1, column=0, sticky='ew')
         self.result_table.configure(xscrollcommand=self.hsb.set)
 
+    def get_aliases(self, query):
+        words = query.split()
+        mapping = {}
+
+        for i in range(1, len(words) - 1):
+            if words[i].lower() == "as":
+                abbreviation = words[i + 1]
+                table_name = words[i - 1]
+                if table_name in self.tables_and_columns:
+                    mapping[abbreviation] = table_name
+
+        return mapping
+
     def execute_query(self):
         query = self.query_text.get("1.0", "end-1c")  # Get the query from the Text widget
         try:
@@ -87,6 +100,8 @@ class DatabaseQuery:
 
         theme = self.settings_tab.get_theme()
 
+        aliases = self.get_aliases(sql_query)
+
         line_number = 1
         for line in sql_query.split('\n'):
             position = 0
@@ -99,6 +114,7 @@ class DatabaseQuery:
                 function_word = word.split("(")[0]
                 function_word_end_pos = f"{start_pos}+{len(function_word)}c"
                 quotation_marks = ("'", '"')
+                tables_and_aliases = set(self.tables_and_columns.keys()) | set(aliases.keys())
 
                 if len(word) == 0 or word in quotation_marks:
                     continue
@@ -115,24 +131,28 @@ class DatabaseQuery:
                 elif word.upper() in SQL_SYMBOLS:
                     self.add_tag_for_word(start_pos, end_pos, word.lower(), "grey")
 
-                elif '.' in word and word.split('.')[0] in self.tables_and_columns:
+                elif '.' in word and word.split('.')[0] in tables_and_aliases:
                     table_column = word.split('.')
-                    table = table_column[0]
-                    all_tables = self.tables_and_columns[table]
+                    table_or_alias = table_column[0]
+                    table = table_or_alias
 
-                    table_end_pos = f"{start_pos}+{len(table)}c"
-                    column_start_pos = f"{start_pos}+{len(table)+1}c"
-                    self.add_tag_for_word(start_pos, table_end_pos, table, theme.color.fg)
+                    if table_or_alias in aliases:
+                        table = aliases[table_or_alias]
+                    table_columns = self.tables_and_columns[table]
+
+                    table_end_pos = f"{start_pos}+{len(table_or_alias)}c"
+                    column_start_pos = f"{start_pos}+{len(table_or_alias)+1}c"
+                    self.add_tag_for_word(start_pos, table_end_pos, table_or_alias, theme.color.fg)
 
                     column = table_column[1]
 
-                    if column in all_tables:
+                    if column in table_columns:
                         self.add_tag_for_word(column_start_pos, end_pos, word, "purple")
                     else:
                         self.add_tag_for_word(column_start_pos, end_pos, word, "red")
 
-                elif word in self.tables_and_columns:
-                    self.add_tag_for_word(start_pos, end_pos, word, theme.color.fg)
+                elif word in tables_and_aliases:
+                    self.add_tag_for_word(start_pos, end_pos, word, "brown")
 
                 else:
                     self.add_default_tag_for_word(start_pos, end_pos, theme.color.fg)
