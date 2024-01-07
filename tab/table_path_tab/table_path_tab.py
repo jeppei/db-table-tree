@@ -26,6 +26,7 @@ class TablePathTab:
         self.result_frame = None
         self.canvas = None
         self.canvas_widget = None
+        self.create_button = None
 
         self.create_input_fields()
         self.create_graph_canvas()
@@ -39,7 +40,6 @@ class TablePathTab:
         pad_y_space = 5
         pad_x_space = 10
 
-        # Entry boxes for input
         tkb.Label(input_frame, text="Start Table:").grid(row=0, column=0, padx=10, pady=10, sticky='ew')
         self.start_table_entry = tkb.Entry(input_frame)
         self.start_table_entry.grid(row=0, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
@@ -67,14 +67,8 @@ class TablePathTab:
         self.depth_entry.grid(row=5, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
         self.depth_entry.insert(0, "5")
 
-        # Button to create the graph
-        create_button = tkb.Button(input_frame, text="Create Graph", command=self.create_graph)
-        create_button.grid(row=6, column=0, pady=pad_y_space, padx=pad_x_space, sticky="we", columnspan=2)
-
-        # Log display
-        self.log_text = tkb.Text(input_frame, height=10, width=40)
-        self.log_text.grid(row=7, column=0, pady=pad_y_space, padx=pad_x_space, sticky="we", columnspan=2)
-        self.log_text.config(state=tkb.DISABLED)  # Make it read-only
+        self.create_button = tkb.Button(input_frame, text="Create Graph", command=self.create_graph)
+        self.create_button.grid(row=6, column=1, pady=pad_y_space, padx=pad_x_space, sticky="we")
 
     def create_graph_canvas(self,):
 
@@ -86,12 +80,6 @@ class TablePathTab:
         self.canvas = FigureCanvasTkAgg(plt.figure(), master=self.result_frame)
         self.canvas.get_tk_widget().pack(padx=10, pady=10, fill='both', expand=True)
 
-    def debug(self, message):
-        self.log_text.config(state=tkb.NORMAL)
-        self.log_text.insert(tkb.END, message + "\n")
-        self.log_text.config(state=tkb.DISABLED)
-        self.log_text.see(tkb.END)
-
     def create_graph(self):
         start_table = self.start_table_entry.get()
         end_table = self.end_table_entry.get()
@@ -100,10 +88,6 @@ class TablePathTab:
         draw_all = self.draw_all_var.get()
         depth = int(self.depth_entry.get())
 
-        self.log_text.config(state=tkb.NORMAL)
-        self.log_text.delete(1.0, tkb.END)  # Clear the log
-        self.log_text.insert(tkb.END, "Creating the network graph...\n")
-
         self.canvas.get_tk_widget().pack_forget()
 
         if start_table != "none" and end_table != "none":
@@ -111,9 +95,6 @@ class TablePathTab:
             self.find_path(mydb, start_table, end_table, ignore, depth, draw_all)
         else:
             self.log_text.insert(tkb.END, "Please enter valid start and end tables.\n")
-
-        self.log_text.config(state=tkb.DISABLED)
-
 
     def get_my_db(self, env):
         print("Connecting to the database")
