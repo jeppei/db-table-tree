@@ -1,4 +1,4 @@
-import difflib
+import re
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
@@ -90,7 +90,7 @@ class DatabaseQuery:
         line_number = 1
         for line in sql_query.split('\n'):
             position = 0
-            words = line.split()
+            words = re.split(r'\s+|=', line)
             for word in words:
                 start_pos = f"{line_number}.{position}"
                 end_pos = f"{start_pos}+{len(word)}c"
@@ -98,8 +98,15 @@ class DatabaseQuery:
                 contains_start_parenthesis = "(" in word
                 function_word = word.split("(")[0]
                 function_word_end_pos = f"{start_pos}+{len(function_word)}c"
+                quotation_marks = ("'", '"')
 
-                if word.upper() in SQL_KEYWORDS:
+                if len(word) == 0 or word in quotation_marks:
+                    continue
+
+                elif word[0] in quotation_marks and word[-1] in quotation_marks:
+                    self.add_tag_for_word(start_pos, end_pos, "STRING"+word.lower(), "green")
+
+                elif word.upper() in SQL_KEYWORDS:
                     self.add_tag_for_word(start_pos, end_pos, word.lower(), theme.color.warning)
 
                 elif (contains_start_parenthesis and function_word.upper() in SQL_FUNCTIONS) or (word.upper() in SQL_FUNCTIONS):
@@ -115,17 +122,17 @@ class DatabaseQuery:
 
                     table_end_pos = f"{start_pos}+{len(table)}c"
                     column_start_pos = f"{start_pos}+{len(table)+1}c"
-                    self.add_tag_for_word(start_pos, table_end_pos, table, "orange")
+                    self.add_tag_for_word(start_pos, table_end_pos, table, theme.color.fg)
 
                     column = table_column[1]
 
                     if column in all_tables:
-                        self.add_tag_for_word(column_start_pos, end_pos, word, "yellow")
+                        self.add_tag_for_word(column_start_pos, end_pos, word, "purple")
                     else:
                         self.add_tag_for_word(column_start_pos, end_pos, word, "red")
 
                 elif word in self.tables_and_columns:
-                    self.add_tag_for_word(start_pos, end_pos, word, "orange")
+                    self.add_tag_for_word(start_pos, end_pos, word, theme.color.fg)
 
                 else:
                     self.add_default_tag_for_word(start_pos, end_pos, theme.color.fg)
@@ -176,10 +183,11 @@ class DatabaseQuery:
             return
 
         if '.' in current_word:
-            words_to_check_against = set()
             table, _ = current_word.split('.', 1)
-            for column in self.tables_and_columns[table]:
-                words_to_check_against.add(f"{table}.{column}")
+            words_to_check_against = set()
+            if table in self.tables_and_columns:
+                for column in self.tables_and_columns[table]:
+                    words_to_check_against.add(f"{table}.{column}")
         else:
             words_to_check_against = all_sql_words_and_tables
 
