@@ -14,6 +14,7 @@ class DatabaseQuery:
     def __init__(self, root, settings_tab: SettingsTab):
         self.result_label = None
         self.settings_tab = settings_tab
+        self.tables_and_columns = self.settings_tab.settings.my_db_navigator.get_tables_and_columns()
 
         self.root = root
         self.root.grid_columnconfigure(0, weight=1)
@@ -86,8 +87,6 @@ class DatabaseQuery:
 
         theme = self.settings_tab.get_theme()
 
-        db_navigator = self.settings_tab.settings.my_db_navigator
-        tables_and_columns = db_navigator.get_tables_and_columns()
         line_number = 1
         for line in sql_query.split('\n'):
             position = 0
@@ -109,10 +108,10 @@ class DatabaseQuery:
                 elif word.upper() in SQL_SYMBOLS:
                     self.add_tag_for_word(start_pos, end_pos, word.lower(), "grey")
 
-                elif '.' in word and word.split('.')[0] in tables_and_columns:
+                elif '.' in word and word.split('.')[0] in self.tables_and_columns:
                     table_column = word.split('.')
                     table = table_column[0]
-                    all_tables = tables_and_columns[table]
+                    all_tables = self.tables_and_columns[table]
 
                     table_end_pos = f"{start_pos}+{len(table)}c"
                     column_start_pos = f"{start_pos}+{len(table)+1}c"
@@ -125,7 +124,7 @@ class DatabaseQuery:
                     else:
                         self.add_tag_for_word(column_start_pos, end_pos, word, "red")
 
-                elif word in tables_and_columns:
+                elif word in self.tables_and_columns:
                     self.add_tag_for_word(start_pos, end_pos, word, "orange")
 
                 else:
@@ -171,17 +170,35 @@ class DatabaseQuery:
             return
 
         current_word = words[word_index]
-        if current_word in SQL_KEYWORDS:
+        all_sql_words_and_tables = SQL_KEYWORDS | SQL_FUNCTIONS | set(self.tables_and_columns.keys())
+
+        if current_word in all_sql_words_and_tables:
             return
 
-        suggestions = difflib.get_close_matches(current_word.upper(), SQL_KEYWORDS, n=10, cutoff=0.7)
-        if suggestions:
-            suggested_words.extend(suggestions)
+        if '.' in current_word:
+            words_to_check_against = set()
+            table, _ = current_word.split('.', 1)
+            for column in self.tables_and_columns[table]:
+                words_to_check_against.add(f"{table}.{column}")
+        else:
+            words_to_check_against = all_sql_words_and_tables
 
-        if len(suggested_words) == 0:
+        suggestions = [w for w in words_to_check_against if w.startswith(current_word)]
+        suggestions_sorted = sorted(suggestions, key=len)
+
+        if suggestions_sorted:
+            suggested_words.extend(suggestions_sorted)
+
+        if len(suggestions_sorted) == 0:
             return
 
-        suggestion_listbox = tk.Listbox(self.root, selectbackground="lightblue", selectmode=tk.SINGLE)
+        longest_word_length = max(len(word) for word in suggestions_sorted)
+        suggestion_listbox = tk.Listbox(
+            self.root,
+            selectbackground="lightblue",
+            selectmode=tk.SINGLE,
+            width=longest_word_length
+        )
         for suggested_word in suggested_words:
             suggestion_listbox.insert(tk.END, suggested_word)
 
