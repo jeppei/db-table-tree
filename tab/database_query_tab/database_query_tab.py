@@ -134,10 +134,11 @@ class DatabaseQuery:
                 elif '.' in word and word.split('.')[0] in tables_and_aliases:
                     table_column = word.split('.')
                     table_or_alias = table_column[0]
+                    alias = table_or_alias
                     table = table_or_alias
-
-                    if table_or_alias in aliases:
+                    if alias in aliases:
                         table = aliases[table_or_alias]
+
                     table_columns = self.tables_and_columns[table]
 
                     table_end_pos = f"{start_pos}+{len(table_or_alias)}c"
@@ -206,15 +207,16 @@ class DatabaseQuery:
             return
 
         if '.' in current_word:
-            alias, _ = current_word.split('.', 1)
-            table = alias
+            table_or_alias, _ = current_word.split('.', 1)
+            alias = table_or_alias
+            table = table_or_alias
             if alias in aliases:
                 table = aliases[table]
 
             words_to_check_against = set()
-            if alias in tables_and_aliases:
+            if table_or_alias in tables_and_aliases:
                 for column in self.tables_and_columns[table]:
-                    words_to_check_against.add(f"{alias}.{column}")
+                    words_to_check_against.add(f"{table_or_alias}.{column}")
         else:
             words_to_check_against = all_sql_words_and_tables
 
