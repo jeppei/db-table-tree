@@ -108,6 +108,7 @@ class Settings:
 
         print(f"Settings saved to {self.settings_file}")
         self.my_db_navigator = DBNavigator(DB(self.selected_connection_setting))
+        #self.my_db_navigator.execute_query("SELECT 1")
 
     def get_connection_settings(self, name):
         for connection_setting in self.connections_settings:

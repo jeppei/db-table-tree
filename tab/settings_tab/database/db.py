@@ -1,6 +1,8 @@
 import logging
+import traceback
 import warnings
 from tkinter import messagebox
+import tkinter as tk
 import mysql.connector  # pip install mysql-connector-python
 from tab.settings_tab.database_connection_settings import DatabaseConnectionSettings
 import os
@@ -30,6 +32,9 @@ class DB:
         self.password = read_setting(self.database_connection_settings.password.get())
         self.database = read_setting(self.database_connection_settings.database.get())
         self.table_to_column_dict = self.get_table_and_columns()
+        #self.table_to_column_dict = {}
+        #self.connected = False
+        #self._connection = None
 
         print(
             f'Connecting to the {self.name} '
@@ -46,10 +51,46 @@ class DB:
             database=self.database
         )
         self._my_cursor = self._connection.cursor()
+        #try:
+        #    self._connection = mysql.connector.connect(
+        #        host=self.host,
+        #        port=self.port,
+        #        user=self.user,
+        #        password=self.password,
+        #        database=self.database
+        #    )
+        #    self._my_cursor = self._connection.cursor()
+        #    self._my_cursor.execute("SELECT 1")
+        #    self.table_to_column_dict = self.get_table_and_columns()
+        #    self.connected = True
+        #except Exception as e:
+        #    self.show_connection_error_popup(e)
+        #    self.connected = False
+
         return self
+
+    def show_connection_error_popup(self, error_message: Exception):
+        root = tk.Tk()
+        root.withdraw()
+        message = (
+            f'Failed to connect to the database using:\n'
+            f' - host={self.host}\n'
+            f' - port={self.port}\n'
+            f' - user={self.user}\n'
+            f' - password=***\n'
+            f' - database={self.database}\n'
+            f'\n'
+            f'{str(error_message)}'
+        )
+        print(message)
+        #traceback.print_exc()
+        tk.messagebox.showinfo("Connection Error", message)
+        root.destroy()
 
     def __exit__(self, *_):
         self._connection.close()
+        #if self._connection is not None:
+        #    self._connection.close()
         self._my_cursor = None
 
     def __init__(self, database_connection_settings: DatabaseConnectionSettings):
@@ -58,6 +99,8 @@ class DB:
     def execute_query(self, query):
         if self._my_cursor is None:
             raise ValueError("Dont query unless you connect")
+        #if not self.connected or self._my_cursor is None:
+        #    return [], []
 
         print(query)
         try:
@@ -76,15 +119,23 @@ class DB:
         return self._my_cursor.fetchall(), columns
 
     def get_table_and_columns(self):
-        engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}')
+        try:
+            connection_string = f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}'
+            print(f"Connecting to: {connection_string}")
+            engine = create_engine(connection_string)
+            #engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}')
 
-        metadata = MetaData()
-        metadata.reflect(bind=engine)
+            metadata = MetaData()
+            metadata.reflect(bind=engine)
 
-        table_names = metadata.tables.keys()
-        table_to_columns = {}
-        for table_name in table_names:
-            table = metadata.tables[table_name]
-            columns = [column.key for column in table.columns]
-            table_to_columns[table_name] = columns
-        return table_to_columns
+            table_names = metadata.tables.keys()
+            table_to_columns = {}
+            for table_name in table_names:
+                table = metadata.tables[table_name]
+                columns = [column.key for column in table.columns]
+                table_to_columns[table_name] = columns
+            return table_to_columns
+
+        except Exception as ex:
+            print("Failed to get tables and columns")
+            return{}
