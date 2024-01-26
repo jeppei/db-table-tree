@@ -1,4 +1,5 @@
 import logging
+import threading
 import traceback
 import warnings
 from tkinter import messagebox
@@ -33,6 +34,12 @@ class DB:
         self.password = read_setting(self.database_connection_settings.password.get())
         self.database = read_setting(self.database_connection_settings.database.get())
 
+        self.table_to_column_dict = {}
+
+        metadata_thread = threading.Thread(target=self.init_metadata)
+        metadata_thread.start()
+
+    def init_metadata(self):
         self.table_to_column_dict = self.get_table_and_columns()
 
     def __str__(self):
@@ -47,11 +54,6 @@ class DB:
 
     def __enter__(self):
 
-
-        #self.table_to_column_dict = {}
-        #self.connected = False
-        #self._connection = None
-
         print(f'Connecting to the {self.name} with {self}')
         self._connection = mysql.connector.connect(
             host=self.host,
@@ -61,28 +63,11 @@ class DB:
             database=self.database
         )
         self._my_cursor = self._connection.cursor()
-        #try:
-        #    self._connection = mysql.connector.connect(
-        #        host=self.host,
-        #        port=self.port,
-        #        user=self.user,
-        #        password=self.password,
-        #        database=self.database
-        #    )
-        #    self._my_cursor = self._connection.cursor()
-        #    self._my_cursor.execute('SELECT 1')
-        #    self.table_to_column_dict = self.get_table_and_columns()
-        #    self.connected = True
-        #except Exception as e:
-        #    self.show_connection_error_popup(e)
-        #    self.connected = False
 
         return self
 
     def __exit__(self, *_):
         self._connection.close()
-        #if self._connection is not None:
-        #    self._connection.close()
         self._my_cursor = None
 
     def show_connection_error_popup(self, error_message: Exception):
@@ -99,15 +84,12 @@ class DB:
             f'{str(error_message)}'
         )
         print(message)
-        #traceback.print_exc()
         tk.messagebox.showinfo('Connection Error', message)
         root.destroy()
 
     def execute_query(self, query):
         if self._my_cursor is None:
             raise ValueError('Dont query unless you connect')
-        #if not self.connected or self._my_cursor is None:
-        #    return [], []
 
         print(query)
         try:
@@ -125,14 +107,12 @@ class DB:
         columns = [i[0] for i in self._my_cursor.description]
         return self._my_cursor.fetchall(), columns
 
-
     def get_table_and_columns(self):
         try:
             connection_string = f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}'
             print(f'Connecting with {self}')
             print(f'Connection string: {connection_string}')
             engine = create_engine(connection_string)
-            #engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.database}')
 
             metadata = MetaData()
             metadata.reflect(bind=engine)
@@ -146,5 +126,5 @@ class DB:
             return table_to_columns
 
         except Exception as ex:
-            print('Failed to get tables and columns')
+            print('Failed to get tables and columns. ' + str(ex))
             return{}
