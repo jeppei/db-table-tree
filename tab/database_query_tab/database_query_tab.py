@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 
-import settings_tab
 from tab.database_query_tab.sql_keywords import SQL_KEYWORDS
 from tab.database_query_tab.sql_functions import SQL_FUNCTIONS
 from tab.database_query_tab.sql_symbols import SQL_SYMBOLS
