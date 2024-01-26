@@ -84,7 +84,7 @@ class Settings:
         self.my_db_navigator = DBNavigator(DB(self.selected_connection_setting))
 
     def save_settings(self):
-        print(f"Saving settings")        # Create a dictionary to store the settings you want to save
+        print(f"Saving settings")
         settings_to_save = {
             "connections": [
                 {
