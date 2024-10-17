@@ -1,5 +1,4 @@
 import ttkbootstrap as tkb
-import json
 
 from tab.settings_tab.settings import Settings
 from theme.themes import all_themes
