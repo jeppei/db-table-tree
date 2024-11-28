@@ -23,7 +23,7 @@ class MainWindow:
         self.database_search = DatabaseSearch(tab3, self.settings)
         self.database_query = DatabaseQuery(tab4, self.settings)
         self.table_path = TablePathTab(tab5, self.settings)
-        self.text_editor = TextEditor(tab6, self.settings)
+        #self.text_editor = TextEditor(tab6, self.settings)
         self.settings.set_table_explorer(self.table_explorer)
 
         self.root_window.mainloop()

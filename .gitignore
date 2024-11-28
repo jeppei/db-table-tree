@@ -1,3 +1,7 @@
 __pycache__
 .idea/
 settings.json
+
+venv/
+build/
+db_table_tree.egg-info/
